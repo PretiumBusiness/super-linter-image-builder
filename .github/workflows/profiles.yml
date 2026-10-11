@@ -31,6 +31,26 @@ on:
         description: JSON array of runner labels
         default: '["self-hosted", "pretium"]'
         required: true
+  # Called by the release workflow, which only runs when the pinned upstream
+  # version changes. There is no schedule or push trigger on purpose: benchmarks
+  # run on a new upstream version or when someone starts them by hand.
+  workflow_call:
+    inputs:
+      upstream_tag:
+        type: string
+        required: true
+      profiles:
+        type: string
+        default: all
+      runs:
+        type: string
+        default: "3"
+      split_download:
+        type: boolean
+        default: false
+      runner_labels:
+        type: string
+        default: '["self-hosted", "pretium"]'
 
 permissions:
   contents: read
@@ -238,6 +258,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           mkdir -p "$RUNNER_TEMP/out"
+          # The branch switch below removes the tools, so keep a copy of compare.sh
+          cp scripts/compare.sh "$RUNNER_TEMP/compare.sh"
           cp results.md bench-*.jsonl build-*.jsonl checks-*.log plan-*.json "$RUNNER_TEMP/out/"
           git fetch origin bench-results || true
           if git rev-parse --verify origin/bench-results >/dev/null 2>&1; then
@@ -249,6 +271,14 @@ jobs:
           dir="results/$(date -u +%Y-%m-%d)-run-${GITHUB_RUN_ID}"
           mkdir -p "$dir"
           cp "$RUNNER_TEMP"/out/* "$dir/"
+          # Latest numbers per upstream tag, merged over several runs. The
+          # release workflow compares these between two tags.
+          bytag="results/by-tag/${{ inputs.upstream_tag }}"
+          mkdir -p "$bytag"
+          cp "$RUNNER_TEMP"/out/* "$bytag/"
+          rm -f "$bytag/results.md"
+          { echo "## Lean vs upstream baseline (upstream ${{ inputs.upstream_tag }})"; echo
+            bash "$RUNNER_TEMP/compare.sh" "$bytag"/bench-*.jsonl "$bytag"/build-*.jsonl 2>/dev/null; } > "$bytag/results.md" || true
           git add results
           git commit -q -m "Benchmark results: run ${GITHUB_RUN_ID} (upstream ${{ inputs.upstream_tag }})"
           git push origin bench-results

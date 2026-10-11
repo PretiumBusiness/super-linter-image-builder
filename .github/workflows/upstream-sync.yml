@@ -3,16 +3,23 @@ name: Upstream sync
 
 # Keeps compiler/linters.json in step with upstream Super-Linter.
 #
-#   coverage  every run: the mapping must cover every VALIDATE_* flag of the
-#             pinned upstream version (upstream-version.txt). Fails otherwise.
-#   sync      scheduled and manual runs: if upstream has a newer release than
-#             the pinned one, add the linters that are missing from the mapping
-#             (draft entries), build one image containing every mapped linter to
-#             check them, bump the pinned version and open a pull request.
+# Nothing here does work on upstream's behalf unless upstream has a newer
+# release than the one pinned in upstream-version.txt:
 #
-# The coverage job runs on a GitHub-hosted runner (it also runs for pull
-# requests). The sync job needs docker with buildx, python3, jq, git and gh on
-# the self-hosted runner and only runs from schedule or manual dispatch.
+#   detect    scheduled and manual runs: one GitHub API call that compares the
+#             pinned version with the latest upstream release. Nothing else runs
+#             when the pin is current.
+#   sync      only when upstream is ahead: add the linters that are missing from
+#             the mapping (draft entries), build one image containing every
+#             mapped linter to check them, bump the pin and open a pull request.
+#             Merging that pull request starts the release workflow, which runs
+#             the before/after benchmarks.
+#   coverage  push and pull request only (a check on our own changes): the
+#             mapping must cover every flag of the pinned upstream version.
+#
+# detect and coverage run on GitHub-hosted runners (coverage also runs for pull
+# requests, which must never run on the self-hosted runner). sync needs docker
+# with buildx, python3, jq, git and gh on the self-hosted runner.
 # Opening the pull request needs the repository setting "Allow GitHub Actions to
 # create and approve pull requests". Without it the branch is still pushed.
 
@@ -26,7 +33,7 @@ on:
         required: false
         default: ""
       runner_labels:
-        description: JSON array of runner labels
+        description: JSON array of runner labels for the sync job
         default: '["self-hosted", "pretium"]'
         required: true
   pull_request:
@@ -52,13 +59,12 @@ concurrency:
 jobs:
   coverage:
     name: Mapping covers the pinned upstream version
-    # Hosted runner on purpose: this job also runs for pull requests, and pull
-    # requests from forks must never run on the self-hosted runner.
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    outputs:
-      pinned: ${{ steps.pin.outputs.pinned }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - id: pin
         run: echo "pinned=$(tr -d '[:space:]' < upstream-version.txt)" >> "$GITHUB_OUTPUT"
@@ -68,6 +74,7 @@ jobs:
           repository: super-linter/super-linter
           ref: ${{ steps.pin.outputs.pinned }}
           path: upstream
+          persist-credentials: false
           sparse-checkout: |
             lib
             dependencies
@@ -83,59 +90,78 @@ jobs:
             exit 1
           fi
 
-  sync:
-    name: Sync to a newer upstream release
-    needs: coverage
+  detect:
+    name: Is upstream ahead of the pinned version?
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ${{ fromJSON(inputs.runner_labels || '["self-hosted", "pretium"]') }}
+    runs-on: ubuntu-latest
+    outputs:
+      pinned: ${{ steps.v.outputs.pinned }}
+      latest: ${{ steps.v.outputs.latest }}
+      behind: ${{ steps.v.outputs.behind }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      PINNED: ${{ needs.coverage.outputs.pinned }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: upstream-version.txt
+          sparse-checkout-cone-mode: false
 
-      - name: Find the latest upstream release
-        id: latest
+      - id: v
+        env:
+          FORCE_TAG: ${{ inputs.force_tag }}
         run: |
-          latest="${{ inputs.force_tag }}"
+          pinned="$(tr -d '[:space:]' < upstream-version.txt)"
+          latest="$FORCE_TAG"
           if [ -z "$latest" ]; then
             latest="$(gh api repos/super-linter/super-linter/releases/latest --jq .tag_name)"
           fi
-          echo "pinned=$PINNED latest=$latest"
-          echo "latest=$latest" >> "$GITHUB_OUTPUT"
-          newest="$(printf '%s\n%s\n' "$PINNED" "$latest" | sort -V | tail -1)"
-          if [ "$latest" != "$PINNED" ] && [ "$newest" = "$latest" ]; then
-            echo "behind=true" >> "$GITHUB_OUTPUT"
-            echo "Pinned version $PINNED is behind upstream $latest." >> "$GITHUB_STEP_SUMMARY"
+          newest="$(printf '%s\n%s\n' "$pinned" "$latest" | sort -V | tail -1)"
+          if [ "$latest" != "$pinned" ] && [ "$newest" = "$latest" ]; then
+            behind=true
+            echo "Pinned $pinned is behind upstream $latest. Running the sync." | tee -a "$GITHUB_STEP_SUMMARY"
           else
-            echo "behind=false" >> "$GITHUB_OUTPUT"
-            echo "Pinned version $PINNED is up to date (upstream $latest)." >> "$GITHUB_STEP_SUMMARY"
+            behind=false
+            echo "Pinned $pinned is current (upstream $latest). Nothing to do." | tee -a "$GITHUB_STEP_SUMMARY"
           fi
+          {
+            echo "pinned=$pinned"
+            echo "latest=$latest"
+            echo "behind=$behind"
+          } >> "$GITHUB_OUTPUT"
+
+  sync:
+    name: Sync to a newer upstream release
+    needs: detect
+    if: needs.detect.outputs.behind == 'true'
+    runs-on: ${{ fromJSON(inputs.runner_labels || '["self-hosted", "pretium"]') }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PINNED: ${{ needs.detect.outputs.pinned }}
+      TAG: ${{ needs.detect.outputs.latest }}
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Check out the new upstream release
-        if: steps.latest.outputs.behind == 'true'
         uses: actions/checkout@v4
         with:
           repository: super-linter/super-linter
-          ref: ${{ steps.latest.outputs.latest }}
+          ref: ${{ needs.detect.outputs.latest }}
           path: upstream
+          persist-credentials: false
           sparse-checkout: |
             lib
             dependencies
 
       - name: Add missing linters to the mapping
-        if: steps.latest.outputs.behind == 'true'
         run: |
           set +e
           python3 compiler/sync_mapping.py --upstream upstream --write --report sync-report.md
-          echo "SYNC_RC=$?" >> "$GITHUB_ENV"
           cat sync-report.md >> "$GITHUB_STEP_SUMMARY"
+          exit 0
 
       - name: Build an image with every mapped linter and run the tool checks
-        if: steps.latest.outputs.behind == 'true'
         continue-on-error: true
-        env:
-          TAG: ${{ steps.latest.outputs.latest }}
         run: |
           docker system prune -af >/dev/null 2>&1 || true
           python3 compiler/generate.py --all --upstream-tag "$TAG" \
@@ -145,9 +171,6 @@ jobs:
             lean-all:check /checks.sh 2>&1 | tee checks-all.log
 
       - name: Open a pull request
-        if: steps.latest.outputs.behind == 'true'
-        env:
-          TAG: ${{ steps.latest.outputs.latest }}
         run: |
           echo "$TAG" > upstream-version.txt
           branch="sync/upstream-${TAG}"
@@ -159,6 +182,8 @@ jobs:
           git push -f origin "$branch"
           {
             echo "Syncs the mapping with upstream Super-Linter ${TAG} (was ${PINNED})."
+            echo
+            echo "Merging this pull request starts the release workflow: it benchmarks the new version and publishes release notes with the before and after numbers."
             echo
             cat sync-report.md
             echo

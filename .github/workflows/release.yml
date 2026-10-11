@@ -1,0 +1,141 @@
+---
+name: Release
+
+# Runs only when the pinned upstream version (upstream-version.txt) changes on
+# main, normally by merging the pull request that the upstream-sync workflow
+# opens. It benchmarks the old and the new version in the same way and publishes
+# a GitHub release whose notes show the numbers before and after.
+#
+#   detect     did the pin change? are there stored results for the old version?
+#   bench-old  only if no results are stored for the old version
+#   bench-new  benchmark the new version (reuses profiles.yml)
+#   release    compare, write the notes, create the release
+#
+# No schedule and no other trigger: a bump of the pin is the only automatic
+# reason to benchmark. A manual run needs both tags.
+# Which profiles are benchmarked: repository variable RELEASE_PROFILES
+# (comma separated), default "ghwm,python,frontend-react,dotnet".
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - upstream-version.txt
+  workflow_dispatch:
+    inputs:
+      old_tag:
+        description: Previous upstream tag
+        required: true
+      new_tag:
+        description: New upstream tag
+        required: true
+      runner_labels:
+        description: JSON array of runner labels for the benchmarks
+        default: '["self-hosted", "pretium"]'
+        required: true
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.v.outputs.changed }}
+      old: ${{ steps.v.outputs.old }}
+      new: ${{ steps.v.outputs.new }}
+      has_old: ${{ steps.v.outputs.has_old }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: v
+        env:
+          IN_OLD: ${{ inputs.old_tag }}
+          IN_NEW: ${{ inputs.new_tag }}
+        run: |
+          if [ -n "$IN_OLD" ] && [ -n "$IN_NEW" ]; then
+            old="$IN_OLD"; new="$IN_NEW"
+          else
+            new="$(tr -d '[:space:]' < upstream-version.txt)"
+            old="$(git show HEAD^:upstream-version.txt 2>/dev/null | tr -d '[:space:]' || true)"
+          fi
+          if [ -n "$old" ] && [ "$old" != "$new" ]; then changed=true; else changed=false; fi
+          has_old=false
+          if git ls-tree -r --name-only origin/bench-results "results/by-tag/$old/" 2>/dev/null | grep -q bench-; then
+            has_old=true
+          fi
+          echo "old=$old new=$new changed=$changed has_old=$has_old" | tee -a "$GITHUB_STEP_SUMMARY"
+          {
+            echo "changed=$changed"; echo "old=$old"; echo "new=$new"; echo "has_old=$has_old"
+          } >> "$GITHUB_OUTPUT"
+
+  bench-old:
+    needs: detect
+    if: needs.detect.outputs.changed == 'true' && needs.detect.outputs.has_old == 'false'
+    uses: ./.github/workflows/profiles.yml
+    with:
+      upstream_tag: ${{ needs.detect.outputs.old }}
+      profiles: ${{ vars.RELEASE_PROFILES || 'ghwm,python,frontend-react,dotnet' }}
+      runner_labels: ${{ inputs.runner_labels || '["self-hosted", "pretium"]' }}
+
+  bench-new:
+    needs: [detect, bench-old]
+    if: always() && needs.detect.outputs.changed == 'true' && needs.bench-old.result != 'cancelled'
+    uses: ./.github/workflows/profiles.yml
+    with:
+      upstream_tag: ${{ needs.detect.outputs.new }}
+      profiles: ${{ vars.RELEASE_PROFILES || 'ghwm,python,frontend-react,dotnet' }}
+      runner_labels: ${{ inputs.runner_labels || '["self-hosted", "pretium"]' }}
+
+  release:
+    needs: [detect, bench-new]
+    if: always() && needs.detect.outputs.changed == 'true' && needs.bench-new.result != 'cancelled'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      OLD: ${{ needs.detect.outputs.old }}
+      NEW: ${{ needs.detect.outputs.new }}
+      PROFILES: ${{ vars.RELEASE_PROFILES || 'ghwm,python,frontend-react,dotnet' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch the stored results
+        run: git worktree add --detach "$RUNNER_TEMP/results" origin/bench-results
+
+      - name: Describe the mapping changes
+        run: |
+          : > mapping.diff
+          if git show HEAD^:compiler/linters.json > old-map.json 2>/dev/null; then
+            jq -r '.linters|keys[]' old-map.json | sort > old-keys
+            jq -r '.linters|keys[]' compiler/linters.json | sort > new-keys
+            comm -13 old-keys new-keys | sed 's/.*/- added linter `&`/' >> mapping.diff
+            comm -23 old-keys new-keys | sed 's/.*/- removed linter `&`/' >> mapping.diff
+          fi
+
+      - name: Write the release notes
+        run: |
+          python3 scripts/release_notes.py \
+            --old-tag "$OLD" --old-dir "$RUNNER_TEMP/results/results/by-tag/$OLD" \
+            --new-tag "$NEW" --new-dir "$RUNNER_TEMP/results/results/by-tag/$NEW" \
+            --profiles "$PROFILES" --mapping-diff mapping.diff --out notes.md
+          cat notes.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish the release
+        run: |
+          tag="upstream-${NEW}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" --title "Upstream Super-Linter ${NEW}" --notes-file notes.md
+          else
+            gh release create "$tag" --target "$GITHUB_SHA" \
+              --title "Upstream Super-Linter ${NEW}" --notes-file notes.md
+          fi

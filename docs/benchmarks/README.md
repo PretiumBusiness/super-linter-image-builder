@@ -9,6 +9,26 @@ Go if the lean image for the first target (ghwm) pulls in about 20 s or less, or
 is at least 3x faster than slim on a **GitHub-hosted** runner. Otherwise the
 honest outcome is a "slim plus caching" write-up.
 
+## When benchmarks run
+
+Nothing runs on upstream's behalf unless upstream has a newer release than the
+one pinned in `upstream-version.txt`:
+
+1. The weekly `upstream-sync` run makes one API call. If the pin is current it
+   stops there, with no checkout of upstream, no build and no benchmark.
+2. If upstream is ahead it adds missing linters to the mapping, checks them with
+   an all-linters image and opens a pull request that bumps the pin.
+3. Merging that pull request runs the `release` workflow: it benchmarks the old
+   version (only if no results are stored for it) and the new one with the same
+   profiles, and publishes a GitHub release `upstream-<tag>` whose notes show
+   the numbers before and after (`scripts/release_notes.py`).
+
+Results are stored on the `bench-results` branch under `results/by-tag/<tag>/`.
+The profiles used for releases come from the repository variable
+`RELEASE_PROFILES` (default `ghwm,python,frontend-react,dotnet`). Starting the
+`Toolchain benchmark` workflow by hand is still possible, as an explicit
+decision, for example to add a profile to the stored results.
+
 ## Pipeline under test
 
 config -> create image -> push to GHCR -> pull on a runner. Today the "create
