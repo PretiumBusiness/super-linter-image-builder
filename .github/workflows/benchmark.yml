@@ -1,0 +1,229 @@
+---
+name: Benchmark pull time
+
+# Builds the hand-made lean overlay (overlay/Dockerfile.ghwm) in two layer
+# compressions, then compares cold pull time against the upstream slim image on
+# a GitHub-hosted runner and on the self-hosted pretium runner.
+# Also runs a smoke test: slim and lean must give the same lint result on ghwm.
+
+on:
+  workflow_dispatch:
+    inputs:
+      upstream_tag:
+        description: Upstream Super-Linter release tag (without the slim- prefix)
+        default: v9.0.0
+        required: true
+      runs:
+        description: Cold pulls per runner and variant
+        default: "5"
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-lean:
+    name: Build lean overlay (${{ matrix.compression }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compression: [gzip, zstd]
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute image tag
+        id: meta
+        env:
+          UPSTREAM_TAG: ${{ inputs.upstream_tag }}
+        run: |
+          echo "tag=ghwm-${UPSTREAM_TAG}" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}/bench:ghwm-${UPSTREAM_TAG}-${{ matrix.compression }}" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: overlay/Dockerfile.ghwm
+          build-args: |
+            UPSTREAM_TAG=${{ inputs.upstream_tag }}
+          tags: ${{ env.image }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          outputs: type=registry,compression=${{ matrix.compression }},force-compression=true
+
+  bench:
+    name: Pull ${{ matrix.variant }} on ${{ matrix.runner }}
+    needs: build-lean
+    runs-on: ${{ fromJSON(matrix.runs_on) }}
+    strategy:
+      fail-fast: false
+      # One at a time so the jobs do not compete for registry bandwidth.
+      max-parallel: 1
+      matrix:
+        include:
+          - { runner: hosted, runs_on: '["ubuntu-latest"]', variant: slim }
+          - { runner: hosted, runs_on: '["ubuntu-latest"]', variant: lean-gzip }
+          - { runner: hosted, runs_on: '["ubuntu-latest"]', variant: lean-zstd }
+          - { runner: pretium, runs_on: '["self-hosted", "pretium"]', variant: slim }
+          - { runner: pretium, runs_on: '["self-hosted", "pretium"]', variant: lean-gzip }
+          - { runner: pretium, runs_on: '["self-hosted", "pretium"]', variant: lean-zstd }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve image
+        env:
+          UPSTREAM_TAG: ${{ inputs.upstream_tag }}
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          case "$VARIANT" in
+            slim)      image="ghcr.io/super-linter/super-linter:slim-${UPSTREAM_TAG}" ;;
+            lean-gzip) image="ghcr.io/${GITHUB_REPOSITORY,,}/bench:ghwm-${UPSTREAM_TAG}-gzip" ;;
+            lean-zstd) image="ghcr.io/${GITHUB_REPOSITORY,,}/bench:ghwm-${UPSTREAM_TAG}-zstd" ;;
+          esac
+          echo "IMAGE=${image}" >> "$GITHUB_ENV"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Optional: enables the download vs unpack split. Failure is tolerated.
+      - name: Install crane
+        continue-on-error: true
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://github.com/google/go-containerregistry/releases/latest/download/go-containerregistry_Linux_x86_64.tar.gz \
+            | tar -xz -C "$HOME/.local/bin" crane
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Record environment
+        run: |
+          {
+            echo "### ${{ matrix.variant }} on ${{ matrix.runner }}"
+            echo '```'
+            docker version --format 'docker {{.Server.Version}}'
+            docker info --format 'storage driver: {{.Driver}}, image store: {{.DriverStatus}}' || true
+            nproc
+            df -h / | tail -1
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Benchmark cold pull
+        env:
+          RUNS: ${{ inputs.runs }}
+          VARIANT: ${{ matrix.variant }}
+          RUNNER_KIND: ${{ matrix.runner }}
+          BENCH_OUT: bench-${{ matrix.runner }}-${{ matrix.variant }}.jsonl
+        run: scripts/bench-pull.sh "$IMAGE" "$RUNS" "$VARIANT" "$RUNNER_KIND"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bench-${{ matrix.runner }}-${{ matrix.variant }}
+          path: bench-${{ matrix.runner }}-${{ matrix.variant }}.jsonl
+
+  smoke:
+    name: Smoke test on ghwm
+    needs: build-lean
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ghwfxlab/ghwm
+          path: target
+          fetch-depth: 0
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lint with slim and lean, compare
+        env:
+          UPSTREAM_TAG: ${{ inputs.upstream_tag }}
+        run: |
+          slim="ghcr.io/super-linter/super-linter:slim-${UPSTREAM_TAG}"
+          lean="ghcr.io/${GITHUB_REPOSITORY,,}/bench:ghwm-${UPSTREAM_TAG}-gzip"
+          docker pull --quiet "$slim"
+          docker pull --quiet "$lean"
+
+          run_lint() {
+            local name="$1" image="$2" start end code
+            start="$(date +%s)"
+            set +e
+            docker run --rm \
+              --env-file examples/ghwm.env \
+              -e RUN_LOCAL=true \
+              -e DEFAULT_BRANCH="$(git -C target symbolic-ref --short HEAD 2>/dev/null || echo main)" \
+              -v "$PWD/target:/tmp/lint" \
+              "$image" > "lint-${name}.log" 2>&1
+            code=$?
+            set -e
+            end="$(date +%s)"
+            echo "${name}: exit ${code}, $((end - start))s"
+            echo "${code}" > "exit-${name}.txt"
+          }
+
+          run_lint slim "$slim"
+          run_lint lean "$lean"
+
+          {
+            echo "### Smoke test: ghwm"
+            echo "- slim exit code: $(cat exit-slim.txt)"
+            echo "- lean exit code: $(cat exit-lean.txt)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$(cat exit-slim.txt)" != "$(cat exit-lean.txt)" ]; then
+            echo "::error::slim and lean exit codes differ"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-logs
+          path: |
+            lint-*.log
+            exit-*.txt
+
+  summary:
+    name: Summarize
+    needs: bench
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bench-*
+          merge-multiple: true
+
+      - name: Build results table
+        run: |
+          {
+            echo "## Cold pull benchmark (upstream ${{ inputs.upstream_tag }})"
+            echo
+            scripts/summarize.sh bench-*.jsonl
+          } | tee results.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: results
+          path: |
+            results.md
+            bench-*.jsonl

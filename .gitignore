@@ -1,0 +1,5 @@
+bench-results.jsonl
+bench-*.jsonl
+results.md
+lint-*.log
+exit-*.txt
