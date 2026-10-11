@@ -77,6 +77,17 @@ jobs:
       RUNS: ${{ inputs.runs }}
       BENCH_SPLIT: ${{ inputs.split_download && '1' || '0' }}
     steps:
+      # The runner VM has a small disk and the standard upstream image is
+      # large, so start every profile from a clean Docker state.
+      - name: Free disk before build
+        run: |
+          df -h / | tail -1
+          docker system prune -af --volumes >/dev/null 2>&1 || true
+          docker builder prune -af >/dev/null 2>&1 || true
+          echo "free after cleanup: $(df -h / | awk 'NR==2{print $4}')"
+          [ "$(df --output=avail -BG / | tail -1 | tr -dc 0-9)" -ge 25 ] \
+            || echo "::warning::less than 25 GB free; large profiles (dotnet) may fail"
+
       - uses: actions/checkout@v4
 
       - uses: actions/checkout@v4
