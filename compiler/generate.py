@@ -102,7 +102,11 @@ def main():
     baseline = "standard" if any(s.get("baseline") == "standard" or s.get("upstream") == "standard"
                                  for s in sel) else "slim"
     base = python_base(args.upstream_dockerfile)
-    upstream_image = f"{UPSTREAM_REPO}:{upstream_variant}-{args.upstream_tag}"
+    def image_tag(variant):
+        # slim images are tagged slim-<tag>; standard images are just <tag>
+        return f"slim-{args.upstream_tag}" if variant == "slim" else args.upstream_tag
+
+    upstream_image = f"{UPSTREAM_REPO}:{image_tag(upstream_variant)}"
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -146,7 +150,7 @@ def main():
                                    + '\nexit "$fail"\n')
     (out / "plan.json").write_text(json.dumps({
         "flags": flags, "upstream_tag": args.upstream_tag, "upstream_image": upstream_image,
-        "baseline_variant": baseline, "baseline_image": f"{UPSTREAM_REPO}:{baseline}-{args.upstream_tag}",
+        "baseline_variant": baseline, "baseline_image": f"{UPSTREAM_REPO}:{image_tag(baseline)}",
         "python_base": base, "bins": bins, "dirs": dirs, "venvs": venvs,
         "npm_roots": npm_roots, "apk": apk}, indent=2) + "\n")
     print(baseline)

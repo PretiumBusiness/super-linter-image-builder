@@ -114,13 +114,18 @@ jobs:
 
       - name: Build and push (gzip and zstd layers)
         run: |
+          rm -f "build-${PROFILE}.jsonl"
           for c in gzip zstd; do
+            t0=$(date +%s.%N)
             docker buildx build build \
               --provenance=false --sbom=false \
               --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
               --label "io.pretium.upstream-tag=${TAG}" \
               --label "io.pretium.profile=${PROFILE}" \
               --output "type=image,name=${LEAN_BASE}:${TAG}-${c},push=true,oci-mediatypes=true,compression=${c},force-compression=true"
+            t1=$(date +%s.%N)
+            jq -nc --arg v "${PROFILE}/lean-${c}" --argjson s "$(awk -v a="$t0" -v b="$t1" 'BEGIN{printf "%.1f", b-a}')" \
+              '{variant:$v, mode:"build", pull_s:$s}' >> "build-${PROFILE}.jsonl"
           done
 
       # Optional: enables the download vs unpack split. Failure is tolerated.
@@ -136,7 +141,11 @@ jobs:
         run: |
           docker pull --quiet "${LEAN_BASE}:${TAG}-gzip" >/dev/null
           docker run --rm -v "$PWD/build/checks.sh:/checks.sh:ro" --entrypoint bash \
-            "${LEAN_BASE}:${TAG}-gzip" /checks.sh | tee checks.log
+            "${LEAN_BASE}:${TAG}-gzip" /checks.sh 2>&1 | tee "checks-${PROFILE}.log"
+          if grep -qiE '^(FAIL|ERROR)|: (FAIL|not found)' "checks-${PROFILE}.log"; then
+            grep -iE '^(FAIL|ERROR)|: (FAIL|not found)' "checks-${PROFILE}.log" | while read -r l; do echo "::error title=${PROFILE} tool check::$l"; done
+            exit 1
+          fi
 
       - name: Benchmark pulls
         if: always()
@@ -157,15 +166,22 @@ jobs:
           # lot from the first reading, the network drifted during this job.
           RUNS=2 measure "$BASELINE_IMAGE" baseline-end cold
 
+      - name: Keep plan and Dockerfile per profile
+        if: always()
+        run: |
+          cp build/plan.json "plan-${PROFILE}.json" || true
+          cp build/Dockerfile "Dockerfile-${PROFILE}" || true
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: profile-${{ matrix.profile }}
           path: |
             bench-${{ matrix.profile }}.jsonl
-            build/plan.json
-            build/Dockerfile
-            checks.log
+            build-${{ matrix.profile }}.jsonl
+            checks-${{ matrix.profile }}.log
+            plan-${{ matrix.profile }}.json
+            Dockerfile-${{ matrix.profile }}
 
       - name: Free disk
         if: always()
@@ -190,7 +206,7 @@ jobs:
           {
             echo "## Lean vs upstream baseline (upstream ${{ inputs.upstream_tag }})"
             echo
-            scripts/compare.sh bench-*.jsonl
+            scripts/compare.sh bench-*.jsonl build-*.jsonl
           } | tee results.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
@@ -205,7 +221,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           mkdir -p "$RUNNER_TEMP/out"
-          cp results.md bench-*.jsonl "$RUNNER_TEMP/out/"
+          cp results.md bench-*.jsonl build-*.jsonl checks-*.log plan-*.json "$RUNNER_TEMP/out/"
           git fetch origin bench-results || true
           if git rev-parse --verify origin/bench-results >/dev/null 2>&1; then
             git checkout -q -B bench-results origin/bench-results
