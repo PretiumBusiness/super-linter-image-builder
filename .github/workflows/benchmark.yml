@@ -63,7 +63,7 @@ jobs:
           outputs: type=registry,compression=${{ matrix.compression }},force-compression=true
 
   bench:
-    name: Pull ${{ matrix.variant }} on ${{ matrix.runner }}
+    name: Pull ${{ matrix.variant }} on ${{ matrix.runner }} (${{ matrix.mode }})
     needs: build-lean
     runs-on: ${{ fromJSON(matrix.runs_on) }}
     strategy:
@@ -72,12 +72,16 @@ jobs:
       max-parallel: 1
       matrix:
         include:
-          - { runner: hosted, runs_on: '["ubuntu-latest"]', variant: slim }
-          - { runner: hosted, runs_on: '["ubuntu-latest"]', variant: lean-gzip }
-          - { runner: hosted, runs_on: '["ubuntu-latest"]', variant: lean-zstd }
-          - { runner: pretium, runs_on: '["self-hosted", "pretium"]', variant: slim }
-          - { runner: pretium, runs_on: '["self-hosted", "pretium"]', variant: lean-gzip }
-          - { runner: pretium, runs_on: '["self-hosted", "pretium"]', variant: lean-zstd }
+          # Cold: image removed before every pull (a fresh GitHub-hosted runner)
+          - { runner: hosted, mode: cold, runs_on: '["ubuntu-latest"]', variant: slim }
+          - { runner: hosted, mode: cold, runs_on: '["ubuntu-latest"]', variant: lean-gzip }
+          - { runner: hosted, mode: cold, runs_on: '["ubuntu-latest"]', variant: lean-zstd }
+          - { runner: pretium, mode: cold, runs_on: '["self-hosted", "pretium"]', variant: slim }
+          - { runner: pretium, mode: cold, runs_on: '["self-hosted", "pretium"]', variant: lean-gzip }
+          - { runner: pretium, mode: cold, runs_on: '["self-hosted", "pretium"]', variant: lean-zstd }
+          # Warm: image already on the self-hosted runner (the preloaded case)
+          - { runner: pretium, mode: warm, runs_on: '["self-hosted", "pretium"]', variant: slim }
+          - { runner: pretium, mode: warm, runs_on: '["self-hosted", "pretium"]', variant: lean-gzip }
     steps:
       - uses: actions/checkout@v4
 
@@ -111,7 +115,7 @@ jobs:
       - name: Record environment
         run: |
           {
-            echo "### ${{ matrix.variant }} on ${{ matrix.runner }}"
+            echo "### ${{ matrix.variant }} on ${{ matrix.runner }} (${{ matrix.mode }})"
             echo '```'
             docker version --format 'docker {{.Server.Version}}'
             docker info --format 'storage driver: {{.Driver}}, image store: {{.DriverStatus}}' || true
@@ -125,13 +129,14 @@ jobs:
           RUNS: ${{ inputs.runs }}
           VARIANT: ${{ matrix.variant }}
           RUNNER_KIND: ${{ matrix.runner }}
-          BENCH_OUT: bench-${{ matrix.runner }}-${{ matrix.variant }}.jsonl
+          BENCH_MODE: ${{ matrix.mode }}
+          BENCH_OUT: bench-${{ matrix.runner }}-${{ matrix.mode }}-${{ matrix.variant }}.jsonl
         run: scripts/bench-pull.sh "$IMAGE" "$RUNS" "$VARIANT" "$RUNNER_KIND"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: bench-${{ matrix.runner }}-${{ matrix.variant }}
-          path: bench-${{ matrix.runner }}-${{ matrix.variant }}.jsonl
+          name: bench-${{ matrix.runner }}-${{ matrix.mode }}-${{ matrix.variant }}
+          path: bench-${{ matrix.runner }}-${{ matrix.mode }}-${{ matrix.variant }}.jsonl
 
   smoke:
     name: Smoke test on ghwm

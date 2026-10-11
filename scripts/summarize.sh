@@ -11,9 +11,9 @@ jq -s -r '
   def mb: if . == null then "n/a" else (. / 1048576 | floor | tostring) + " MB" end;
   def s:  if . == null then "n/a" else (. * 10 | round / 10 | tostring) + " s" end;
 
-  "| Runner | Variant | Runs | Pull median | Pull min-max | Download (crane) | Load | Compressed | Uncompressed |",
-  "|---|---|---|---|---|---|---|---|---|",
-  (flatten | group_by([.runner, .variant])[] |
+  "| Runner | Mode | Variant | Runs | Pull median | Pull min-max | Start | Download (crane) | Load | Compressed | Uncompressed |",
+  "|---|---|---|---|---|---|---|---|---|---|---|",
+  (flatten | group_by([.runner, (.mode // "cold"), .variant])[] |
     . as $g | $g[0] as $f |
-    "| \($f.runner) | \($f.variant) | \($g | length) | \([$g[].pull_s] | median | s) | \([$g[].pull_s] | min | s)-\([$g[].pull_s] | max | s) | \([$g[] | select(.download_s != null) | .download_s] | median | s) | \([$g[] | select(.load_s != null) | .load_s] | median | s) | \($f.compressed_bytes | mb) | \($f.uncompressed_bytes | mb) |")
+    "| \($f.runner) | \($f.mode // "cold") | \($f.variant) | \($g | length) | \([$g[].pull_s] | median | s) | \([$g[].pull_s] | min | s)-\([$g[].pull_s] | max | s) | \([$g[] | select(.start_s != null) | .start_s] | median | s) | \([$g[] | select(.download_s != null) | .download_s] | median | s) | \([$g[] | select(.load_s != null) | .load_s] | median | s) | \($f.compressed_bytes | mb) | \($f.uncompressed_bytes | mb) |")
 ' "$@"
