@@ -44,7 +44,13 @@ Nothing is fixed. The base and the toolchains are plain env files with
 - leave the base out, or write your own
 - stack several toolchains (`--env toolchains/python.env --env toolchains/rust.env`)
 - drop single linters from a combination with `--exclude NATURAL_LANGUAGE`
-- add Alpine packages with `--extra-apk curl`
+- add tools Super-Linter does not ship: Alpine packages (`--extra-apk`), npm
+  packages (`--extra-npm`) and pip packages (`--extra-pip`), plus `--extra-check`
+  commands that must succeed in the built image. They can also be written in an
+  env file (`EXTRA_APK=`, `EXTRA_NPM=`, `EXTRA_PIP=`, `EXTRA_CHECK=`), see
+  `examples/with-extras.env`. Extras are installed at build time from the
+  package registries, in their own layers (`/opt/extras`), and npm installs run
+  with `--ignore-scripts`
 
 The toolchains in this repository, and the numbers in
 [docs/benchmarks](docs/benchmarks/README.md), are examples of combinations, not

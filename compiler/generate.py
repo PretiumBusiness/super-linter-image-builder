@@ -14,7 +14,10 @@ Writes into --out:
 
 Everything is configurable. The base and the toolchains are only env files, so
 any combination works: leave the base out, add several toolchains, drop single
-flags with --exclude, or add Alpine packages with --extra-apk.
+flags with --exclude, or add tools Super-Linter does not ship with --extra-apk,
+--extra-npm and --extra-pip (and --extra-check to verify them). The same can be
+written in an env file: EXTRA_APK="..." EXTRA_NPM="..." EXTRA_PIP="..."
+EXTRA_CHECK="...".
 
 Prints the upstream baseline variant ("slim" or "standard") to compare against.
 """
@@ -61,6 +64,22 @@ def read_flags(paths):
     return flags
 
 
+def read_extras(paths):
+    """EXTRA_APK, EXTRA_NPM, EXTRA_PIP (space separated) and EXTRA_CHECK (one
+    command per line, repeatable) from env files."""
+    out = {"APK": [], "NPM": [], "PIP": [], "CHECK": []}
+    for p in paths:
+        for line in Path(p).read_text().splitlines():
+            m = re.match(r'\s*EXTRA_(APK|NPM|PIP|CHECK)\s*=\s*"?(.*?)"?\s*$', line)
+            if not m:
+                continue
+            if m.group(1) == "CHECK":
+                out["CHECK"].append(m.group(2))
+            else:
+                out[m.group(1)] += m.group(2).split()
+    return out
+
+
 def python_base(dockerfile):
     m = re.search(r"^FROM\s+(python:\S+)\s+AS\s+python-base", Path(dockerfile).read_text(), re.M)
     if not m:
@@ -83,6 +102,12 @@ def main():
                     help="drop a flag selected by the env files, e.g. NATURAL_LANGUAGE (repeatable)")
     ap.add_argument("--extra-apk", action="append", default=[], metavar="PKG",
                     help="extra Alpine package to install (repeatable)")
+    ap.add_argument("--extra-npm", action="append", default=[], metavar="PKG",
+                    help="extra npm package, installed from the registry at build time, e.g. left-pad@1.3.0 (repeatable)")
+    ap.add_argument("--extra-pip", action="append", default=[], metavar="PKG",
+                    help="extra pip package, installed from PyPI at build time, e.g. yq==3.4.3 (repeatable)")
+    ap.add_argument("--extra-check", action="append", default=[], metavar="CMD",
+                    help="command that must succeed in the built image to verify an extra (repeatable)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--mapping", default=str(HERE / "linters.json"))
     args = ap.parse_args()
@@ -109,9 +134,16 @@ def main():
     venvs = uniq(v for s in sel for v in s.get("venvs", []))
     groups = uniq(g for s in sel for g in s.get("npm", []))
     npm_roots = uniq(p for g in groups for p in mapping["npm_groups"][g])
-    apk = uniq(mapping["base_apk"] + [p for s in sel for p in s.get("apk", [])] + args.extra_apk
+    extras = read_extras(args.env)
+    extra_apk = uniq(extras["APK"] + args.extra_apk)
+    extra_npm = uniq(extras["NPM"] + args.extra_npm)
+    extra_pip = uniq(extras["PIP"] + args.extra_pip)
+    extra_check = extras["CHECK"] + args.extra_check
+    apk = uniq(mapping["base_apk"] + [p for s in sel for p in s.get("apk", [])] + extra_apk + (['nodejs-current'] if extra_npm else [])
                + (["nodejs-current"] if npm_roots else []))
-    path_extra = uniq([f"/venvs/{v}/bin" for v in venvs] + (["/node_modules/.bin"] if npm_roots else [])
+    path_extra = uniq([f"/venvs/{v}/bin" for v in venvs]
+                      + (["/opt/extras/npm/node_modules/.bin"] if extra_npm else [])
+                      + (["/opt/extras/pip/bin"] if extra_pip else []) + (["/node_modules/.bin"] if npm_roots else [])
                       + [p for s in sel for p in s.get("path", [])])
     links = uniq(tuple(l) for s in sel for l in s.get("links", []))
     env_extra = {}
@@ -154,6 +186,16 @@ def main():
               '      else echo "WARNING: missing upstream path: $p" >&2; fi; done',
               f"FROM scratch AS {name}",
               f"COPY --from={name}-src /out /", ""]
+    if extra_npm:
+        L += [f"FROM {base} AS extra-npm",
+              "RUN apk add --no-cache nodejs-current npm",
+              "RUN mkdir -p /opt/extras/npm && cd /opt/extras/npm && npm install --no-audit --no-fund --ignore-scripts "
+              + " ".join(shlex.quote(x) for x in extra_npm), ""]
+    if extra_pip:
+        L += [f"FROM {base} AS extra-pip",
+              "RUN apk add --no-cache gcc linux-headers musl-dev python3-dev",
+              "RUN python -m venv /opt/extras/pip && /opt/extras/pip/bin/pip install --no-cache-dir "
+              + " ".join(shlex.quote(x) for x in extra_pip), ""]
     L += [f"FROM {base}",
           "RUN apk add --no-cache \\",
           "  " + " \\\n  ".join(apk), "",
@@ -162,6 +204,8 @@ def main():
     L += ["COPY --from=venvs / /"] if venvs else []
     L += ["COPY --from=dirs / /"] if dirs else []
     L += ["COPY --from=npm-prune /pruned /node_modules"] if npm_roots else []
+    L += ["COPY --from=extra-npm /opt/extras/npm /opt/extras/npm"] if extra_npm else []
+    L += ["COPY --from=extra-pip /opt/extras/pip /opt/extras/pip"] if extra_pip else []
     L += ["COPY --from=action / /", ""]
     for target, link in links:
         L.append(f"RUN [ -e {shlex.quote(link)} ] || ln -s {shlex.quote(target)} {shlex.quote(link)}")
@@ -175,7 +219,7 @@ def main():
           "WORKDIR /", 'ENTRYPOINT ["/action/lib/linter.sh"]', ""]
     (out / "Dockerfile").write_text("\n".join(L))
 
-    checks = uniq(c for s in sel for c in s.get("check", []))
+    checks = uniq([c for s in sel for c in s.get("check", [])] + extra_check)
     (out / "checks.sh").write_text("#!/usr/bin/env bash\n" + FIXTURES + CHECK_FUNC
                                    + "\n".join(f"run_check {shlex.quote(c)}" for c in checks)
                                    + '\nexit "$fail"\n')
@@ -183,7 +227,8 @@ def main():
         "flags": flags, "upstream_tag": args.upstream_tag, "upstream_image": upstream_image,
         "baseline_variant": baseline, "baseline_image": f"{UPSTREAM_REPO}:{image_tag(baseline)}",
         "python_base": base, "links": links, "bins": bins, "dirs": dirs, "venvs": venvs,
-        "npm_roots": npm_roots, "apk": apk}, indent=2) + "\n")
+        "npm_roots": npm_roots, "apk": apk,
+        "extras": {"apk": extra_apk, "npm": extra_npm, "pip": extra_pip, "check": extra_check}}, indent=2) + "\n")
     print(baseline)
 
 

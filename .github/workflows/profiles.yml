@@ -57,6 +57,8 @@ jobs:
               [ "$p" = "ghwm" ] && envs="examples/ghwm.env"
               # Every mapped linter at once: verifies the whole mapping.
               [ "$p" = "all-linters" ] && envs="ALL"
+              # Extras: tools Super-Linter does not ship (apk, npm, pip).
+              [ "$p" = "extras-example" ] && envs="base/opinionated.env examples/with-extras.env"
               [ "$envs" = "ALL" ] || for f in $envs; do test -f "$f" || { echo "::error::missing $f" >&2; exit 1; }; done
               jq -nc --arg p "$p" --arg e "$envs" '{profile: $p, envs: $e}'
             done | jq -sc .
