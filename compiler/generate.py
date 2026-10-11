@@ -29,6 +29,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
 UPSTREAM_REPO = "ghcr.io/super-linter/super-linter"
 FIXTURES = r"""mkdir -p /tmp/fx && cd /tmp/fx
 printf '# Title\n\nHello world.\n' > t.md
@@ -96,6 +97,9 @@ def main():
     ap.add_argument("--env", action="append", default=[], help="env file with VALIDATE_*=true lines (repeatable)")
     ap.add_argument("--upstream-tag", required=True, help="e.g. v9.0.0")
     ap.add_argument("--upstream-dockerfile", required=True, help="the upstream Dockerfile at that tag")
+    ap.add_argument("--workflow", action="append", default=[], metavar="FILE",
+                    help="read VALIDATE_* from the super-linter step of a workflow (repeatable); "
+                         "follows upstream semantics: only the linters set to true, or all except those set to false")
     ap.add_argument("--all", action="store_true",
                     help="select every flag in the mapping (used to verify the whole mapping)")
     ap.add_argument("--exclude", action="append", default=[], metavar="FLAG",
@@ -114,9 +118,18 @@ def main():
 
     mapping = json.loads(Path(args.mapping).read_text())
     table = mapping["linters"]
-    if not args.env and not args.all:
-        sys.exit("give at least one --env file, or --all")
+    if not args.env and not args.all and not args.workflow:
+        sys.exit("give at least one --env file or --workflow, or --all")
     flags = read_flags(args.env)
+    if args.workflow:
+        import slconfig
+        wenv = {}
+        try:
+            for w in args.workflow:
+                wenv.update(slconfig.parse_workflow(w))
+            flags = uniq(flags + slconfig.effective_flags(wenv, list(table)))
+        except slconfig.ConfigError as e:
+            sys.exit(f"{e}")
     if args.all:
         flags = uniq(flags + [f for f in table if f != "ALL_CODEBASE"])
     excluded = [e.removeprefix("VALIDATE_") for e in args.exclude]

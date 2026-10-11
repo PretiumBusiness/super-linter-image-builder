@@ -31,6 +31,10 @@ Status: early. The first step is measuring whether this is worth building. See
 | `sim/` | Pull-time simulation (estimates, runs without a registry) |
 | `overlay/Dockerfile.ghwm` | The first hand-built overlay (kept for reference) |
 | `examples/ghwm.env` | The ghwm Super-Linter environment, used as test input |
+| `compiler/drift_check.py`, `compiler/filetypes.json` | PR drift blocker: fails when a PR adds files whose linters are not enabled (file-type rules transcribed from upstream) |
+| `compiler/slconfig.py` | Reads the Super-Linter configuration from workflows and env files, with upstream's `VALIDATE_*` semantics |
+| `.github/workflows/drift-blocker.yml` | Reusable workflow wrapping the drift check |
+| `tests/` | Unit tests (`python3 -m unittest discover -s tests`), using the ghwm workflow as a fixture |
 | `scripts/bench-pull.sh` | Cold pull timing |
 | `scripts/summarize.sh` | Results table from benchmark output |
 | `.github/workflows/profiles.yml` | Per profile: generate, push to GHCR, verify tools, benchmark cold and warm pulls (self-hosted runner) |
@@ -59,6 +63,32 @@ the supported set.
 The reason for an opinionated base is that a repository using one linter has no
 use for Super-Linter. The value is in running a broad set of checks, so the base
 is broad and each toolchain adds a stack on top.
+
+## Block pull requests that outgrow the image
+
+The image only contains the linters you enabled. If a pull request adds a file
+type whose linters are not enabled (a `.rs` file when no Rust linter is on),
+Super-Linter would silently skip it. The drift blocker fails that pull request
+and says which linter to enable:
+
+```yaml
+jobs:
+  drift:
+    permissions:
+      contents: read
+    uses: PretiumBusiness/super-linter-image-builder/.github/workflows/drift-blocker.yml@main
+    with:
+      workflow: .github/workflows/linter.yml   # the workflow with the super-linter step
+      allow_ext: "txt lock"                    # file types you deliberately do not lint
+```
+
+The configuration is read from the `env:` of the Super-Linter step, with the
+upstream rules: if any `VALIDATE_X` is `true`, only those linters run; if only
+`false` values are set, everything else runs. `FILTER_REGEX_INCLUDE` and
+`FILTER_REGEX_EXCLUDE` are respected. The same discovery works in the compiler:
+`generate.py --workflow .github/workflows/linter.yml ...`. Content-based
+detections (OpenAPI, CloudFormation, Kubernetes, ARM, AWS States, Ansible) are
+not modelled, so a YAML file of those kinds is only checked as plain YAML.
 
 ## Try it locally
 

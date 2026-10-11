@@ -1,0 +1,87 @@
+---
+name: Lean image drift blocker
+
+# Reusable workflow. Fails a pull request that adds files the repository's lean
+# Super-Linter image does not lint, because the linters for them are not enabled.
+#
+# Use it from a pull_request workflow in the repository that has the Super-Linter
+# workflow:
+#
+#   jobs:
+#     drift:
+#       permissions:
+#         contents: read
+#       uses: PretiumBusiness/super-linter-image-builder/.github/workflows/drift-blocker.yml@main
+#       with:
+#         workflow: .github/workflows/linter.yml
+#
+# It runs on a GitHub-hosted runner by default. It never runs repository code:
+# it reads the Super-Linter workflow and the list of changed files.
+
+on:
+  workflow_call:
+    inputs:
+      workflow:
+        description: Workflow file that contains the super-linter step
+        type: string
+        required: true
+      allow_ext:
+        description: Space-separated file extensions or names you do not lint (for example "txt lock")
+        type: string
+        default: ""
+      warn_only:
+        description: Report problems without failing the check
+        type: boolean
+        default: false
+      tool_ref:
+        description: Ref of super-linter-image-builder to use
+        type: string
+        default: main
+      runner:
+        description: Runner label
+        type: string
+        default: ubuntu-latest
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    name: Lean image drift
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Check out the pull request
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check out the tool
+        uses: actions/checkout@v4
+        with:
+          repository: PretiumBusiness/super-linter-image-builder
+          ref: ${{ inputs.tool_ref }}
+          path: .lean-tool
+          persist-credentials: false
+
+      - name: Check changed files against the Super-Linter configuration
+        env:
+          WORKFLOW: ${{ inputs.workflow }}
+          ALLOW_EXT: ${{ inputs.allow_ext }}
+          WARN_ONLY: ${{ inputs.warn_only }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          args=(--workflow "$WORKFLOW" --root .)
+          for e in $ALLOW_EXT; do args+=(--allow-ext "$e"); done
+          [ "$WARN_ONLY" = "true" ] && args+=(--warn-only)
+          if [ -n "$BASE_REF" ]; then
+            # fetch-depth 0 above already fetched every branch
+            args+=(--base "origin/$BASE_REF")
+          else
+            args+=(--base "HEAD~1")
+          fi
+          set +e
+          python3 .lean-tool/compiler/drift_check.py "${args[@]}" --report drift.md
+          rc=$?
+          cat drift.md >> "$GITHUB_STEP_SUMMARY"
+          exit $rc

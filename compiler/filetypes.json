@@ -1,0 +1,475 @@
+{
+ "_note": "File types to the Super-Linter flags that lint them. Transcribed from lib/functions/buildFileList.sh and detectFiles.sh (upstream v9.0.0). Content-based detections (OpenAPI, ARM, CloudFormation, Kubernetes, AWS States, Ansible) are not modelled. A file is matched by 'ext', 'name' (regex on the lower-case base name), 'path' (regex on the path, with ext when both given) or 'shebang' (regex on the first line, files without an extension).",
+ "always_on": [
+  "EDITORCONFIG",
+  "GITLEAKS",
+  "GIT_MERGE_CONFLICT_MARKERS",
+  "JSCPD",
+  "TRIVY",
+  "PRE_COMMIT",
+  "SPELL_CODESPELL",
+  "BIOME_FORMAT",
+  "BIOME_LINT",
+  "CHECKOV",
+  "GIT_COMMITLINT"
+ ],
+ "rules": [
+  {
+   "flags": [
+    "BASH",
+    "BASH_EXEC",
+    "SHELL_SHFMT"
+   ],
+   "ext": [
+    "sh",
+    "bash",
+    "bats",
+    "dash",
+    "ksh"
+   ],
+   "shebang": "^#!.*\\b(ba|da|k)?sh\\b"
+  },
+  {
+   "flags": [
+    "BASH_EXEC",
+    "SHELL_SHFMT"
+   ],
+   "ext": [
+    "zsh"
+   ]
+  },
+  {
+   "flags": [
+    "CLOJURE"
+   ],
+   "ext": [
+    "clj",
+    "cljs",
+    "cljc",
+    "edn"
+   ]
+  },
+  {
+   "flags": [
+    "CPP",
+    "CLANG_FORMAT"
+   ],
+   "ext": [
+    "cpp",
+    "h",
+    "cc",
+    "hpp",
+    "cxx",
+    "cu",
+    "hxx",
+    "c++",
+    "hh",
+    "h++",
+    "cuh",
+    "c"
+   ]
+  },
+  {
+   "flags": [
+    "COFFEESCRIPT"
+   ],
+   "ext": [
+    "coffee"
+   ]
+  },
+  {
+   "flags": [
+    "CSHARP"
+   ],
+   "ext": [
+    "cs"
+   ]
+  },
+  {
+   "flags": [
+    "CSS",
+    "CSS_PRETTIER"
+   ],
+   "ext": [
+    "css",
+    "scss",
+    "sass"
+   ]
+  },
+  {
+   "flags": [
+    "DART"
+   ],
+   "ext": [
+    "dart"
+   ]
+  },
+  {
+   "flags": [
+    "DOCKERFILE_HADOLINT"
+   ],
+   "name": "^(.+\\.)?(contain|dock)erfile$"
+  },
+  {
+   "flags": [
+    "ENV"
+   ],
+   "ext": [
+    "env"
+   ],
+   "name": "\\.env\\."
+  },
+  {
+   "flags": [
+    "GO",
+    "GO_MODULES"
+   ],
+   "ext": [
+    "go"
+   ]
+  },
+  {
+   "flags": [
+    "GO_MODULES"
+   ],
+   "name": "^go\\.mod$"
+  },
+  {
+   "flags": [
+    "GROOVY"
+   ],
+   "ext": [
+    "groovy",
+    "jenkinsfile",
+    "gradle",
+    "nf"
+   ],
+   "name": "jenkinsfile"
+  },
+  {
+   "flags": [
+    "HTML",
+    "HTML_PRETTIER"
+   ],
+   "ext": [
+    "html"
+   ]
+  },
+  {
+   "flags": [
+    "JAVA",
+    "GOOGLE_JAVA_FORMAT"
+   ],
+   "ext": [
+    "java"
+   ]
+  },
+  {
+   "flags": [
+    "JAVASCRIPT_ES",
+    "JAVASCRIPT_PRETTIER"
+   ],
+   "ext": [
+    "js"
+   ]
+  },
+  {
+   "flags": [
+    "JSONC",
+    "JSONC_PRETTIER"
+   ],
+   "ext": [
+    "jsonc",
+    "json5"
+   ]
+  },
+  {
+   "flags": [
+    "JSON",
+    "JSON_PRETTIER"
+   ],
+   "ext": [
+    "json"
+   ]
+  },
+  {
+   "flags": [
+    "JSX",
+    "JSX_PRETTIER"
+   ],
+   "ext": [
+    "jsx"
+   ]
+  },
+  {
+   "flags": [
+    "KOTLIN"
+   ],
+   "ext": [
+    "kt",
+    "kts"
+   ]
+  },
+  {
+   "flags": [
+    "LUA"
+   ],
+   "ext": [
+    "lua"
+   ]
+  },
+  {
+   "flags": [
+    "LATEX"
+   ],
+   "ext": [
+    "tex"
+   ]
+  },
+  {
+   "flags": [
+    "MARKDOWN",
+    "MARKDOWN_PRETTIER",
+    "NATURAL_LANGUAGE"
+   ],
+   "ext": [
+    "md"
+   ]
+  },
+  {
+   "flags": [
+    "PHP_BUILTIN",
+    "PHP_PHPCS",
+    "PHP_PHPSTAN",
+    "PHP_PSALM"
+   ],
+   "ext": [
+    "php"
+   ]
+  },
+  {
+   "flags": [
+    "PERL"
+   ],
+   "ext": [
+    "pl",
+    "pm",
+    "t"
+   ],
+   "shebang": "^#!.*\\bperl\\b"
+  },
+  {
+   "flags": [
+    "POWERSHELL"
+   ],
+   "ext": [
+    "ps1",
+    "psm1",
+    "psd1",
+    "ps1xml",
+    "pssc",
+    "psrc",
+    "cdxml"
+   ]
+  },
+  {
+   "flags": [
+    "PROTOBUF"
+   ],
+   "ext": [
+    "proto"
+   ]
+  },
+  {
+   "flags": [
+    "PYTHON_BLACK",
+    "PYTHON_FLAKE8",
+    "PYTHON_ISORT",
+    "PYTHON_MYPY",
+    "PYTHON_PYLINT",
+    "PYTHON_RUFF",
+    "PYTHON_RUFF_FORMAT"
+   ],
+   "ext": [
+    "py"
+   ],
+   "shebang": "^#!.*\\bpython"
+  },
+  {
+   "flags": [
+    "R"
+   ],
+   "ext": [
+    "r",
+    "rmd"
+   ]
+  },
+  {
+   "flags": [
+    "RUBY"
+   ],
+   "ext": [
+    "rb"
+   ],
+   "shebang": "^#!.*\\bruby\\b"
+  },
+  {
+   "flags": [
+    "RUST_2015",
+    "RUST_2018",
+    "RUST_2021",
+    "RUST_2024"
+   ],
+   "ext": [
+    "rs"
+   ]
+  },
+  {
+   "flags": [
+    "RUST_CLIPPY"
+   ],
+   "name": "^cargo\\.toml$"
+  },
+  {
+   "flags": [
+    "SCALAFMT"
+   ],
+   "ext": [
+    "scala",
+    "sc"
+   ]
+  },
+  {
+   "flags": [
+    "SNAKEMAKE_LINT",
+    "SNAKEMAKE_SNAKEFMT"
+   ],
+   "ext": [
+    "smk"
+   ],
+   "name": "^snakefile$"
+  },
+  {
+   "flags": [
+    "SQLFLUFF"
+   ],
+   "ext": [
+    "sql"
+   ]
+  },
+  {
+   "flags": [
+    "TERRAFORM_TFLINT",
+    "TERRAFORM_FMT"
+   ],
+   "ext": [
+    "tf"
+   ]
+  },
+  {
+   "flags": [
+    "TERRAGRUNT"
+   ],
+   "ext": [
+    "hcl"
+   ],
+   "exclude_path": "(\\.tflint\\.hcl|\\.pkr\\.hcl|docker-bake(\\.override)?\\.hcl)"
+  },
+  {
+   "flags": [
+    "TYPESCRIPT_ES",
+    "TYPESCRIPT_PRETTIER"
+   ],
+   "ext": [
+    "ts"
+   ]
+  },
+  {
+   "flags": [
+    "TSX"
+   ],
+   "ext": [
+    "tsx"
+   ]
+  },
+  {
+   "flags": [
+    "XML"
+   ],
+   "ext": [
+    "xml",
+    "xsd"
+   ]
+  },
+  {
+   "flags": [
+    "GO_RELEASER"
+   ],
+   "path": ".?goreleaser.+ya?ml"
+  },
+  {
+   "flags": [
+    "GRAPHQL_PRETTIER"
+   ],
+   "ext": [
+    "graphql"
+   ]
+  },
+  {
+   "flags": [
+    "VUE",
+    "VUE_PRETTIER"
+   ],
+   "ext": [
+    "vue"
+   ]
+  },
+  {
+   "flags": [
+    "DOTNET_SLN_FORMAT_ANALYZERS",
+    "DOTNET_SLN_FORMAT_STYLE",
+    "DOTNET_SLN_FORMAT_WHITESPACE"
+   ],
+   "ext": [
+    "sln"
+   ]
+  },
+  {
+   "flags": [
+    "YAML",
+    "YAML_PRETTIER"
+   ],
+   "ext": [
+    "yml",
+    "yaml"
+   ]
+  },
+  {
+   "flags": [
+    "GITHUB_ACTIONS",
+    "GITHUB_ACTIONS_ZIZMOR"
+   ],
+   "ext": [
+    "yml",
+    "yaml"
+   ],
+   "path": "\\.github/workflows/"
+  },
+  {
+   "flags": [
+    "GITHUB_ACTIONS_ZIZMOR"
+   ],
+   "ext": [
+    "yml",
+    "yaml"
+   ],
+   "path": "(^|/)(\\.github/dependabot|action)\\.ya?ml$"
+  },
+  {
+   "flags": [
+    "RENOVATE"
+   ],
+   "name": "^(renovate\\.json5?|\\.renovaterc(\\.json5?)?)$"
+  }
+ ]
+}
