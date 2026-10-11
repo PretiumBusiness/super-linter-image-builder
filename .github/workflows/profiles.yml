@@ -177,6 +177,8 @@ jobs:
     needs: profile
     if: always()
     runs-on: ${{ fromJSON(inputs.runner_labels) }}
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -196,3 +198,24 @@ jobs:
           path: |
             results.md
             bench-*.jsonl
+
+      # Keep a readable history of runs in the repo, on a separate branch.
+      - name: Publish results to the bench-results branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p "$RUNNER_TEMP/out"
+          cp results.md bench-*.jsonl "$RUNNER_TEMP/out/"
+          git fetch origin bench-results || true
+          if git rev-parse --verify origin/bench-results >/dev/null 2>&1; then
+            git checkout -q -B bench-results origin/bench-results
+          else
+            git checkout -q --orphan bench-results
+            git rm -rfq . || true
+          fi
+          dir="results/$(date -u +%Y-%m-%d)-run-${GITHUB_RUN_ID}"
+          mkdir -p "$dir"
+          cp "$RUNNER_TEMP"/out/* "$dir/"
+          git add results
+          git commit -q -m "Benchmark results: run ${GITHUB_RUN_ID} (upstream ${{ inputs.upstream_tag }})"
+          git push origin bench-results
