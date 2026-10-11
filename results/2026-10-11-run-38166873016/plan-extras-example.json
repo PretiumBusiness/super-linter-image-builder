@@ -1,0 +1,90 @@
+{
+  "flags": [
+    "EDITORCONFIG",
+    "ENV",
+    "GITHUB_ACTIONS",
+    "GITHUB_ACTIONS_ZIZMOR",
+    "GITLEAKS",
+    "GIT_MERGE_CONFLICT_MARKERS",
+    "JSON",
+    "JSON_PRETTIER",
+    "MARKDOWN",
+    "NATURAL_LANGUAGE",
+    "YAML",
+    "BASH",
+    "SHELL_SHFMT",
+    "DOCKERFILE_HADOLINT"
+  ],
+  "upstream_tag": "v9.0.0",
+  "upstream_image": "ghcr.io/super-linter/super-linter:slim-v9.0.0",
+  "baseline_variant": "slim",
+  "baseline_image": "ghcr.io/super-linter/super-linter:slim-v9.0.0",
+  "python_base": "python:3.14.7-alpine3.24",
+  "links": [],
+  "bins": [
+    "/usr/bin/editorconfig-checker",
+    "/usr/bin/dotenv-linter",
+    "/usr/bin/actionlint",
+    "/usr/bin/gitleaks",
+    "/usr/bin/git-merge-conflict-markers",
+    "/usr/bin/shellcheck",
+    "/usr/bin/shfmt",
+    "/usr/bin/hadolint"
+  ],
+  "dirs": [],
+  "venvs": [
+    "zizmor",
+    "yamllint"
+  ],
+  "npm_roots": [
+    "eslint",
+    "eslint-plugin-n",
+    "eslint-plugin-prettier",
+    "prettier",
+    "globals",
+    "eslint-plugin-jsonc",
+    "@typescript-eslint/eslint-plugin",
+    "@typescript-eslint/parser",
+    "eslint-plugin-vue",
+    "eslint-plugin-react",
+    "@eslint/js",
+    "@eslint/eslintrc",
+    "markdownlint-cli",
+    "textlint",
+    "textlint-filter-rule-allowlist",
+    "textlint-filter-rule-comments",
+    "textlint-rule-terminology"
+  ],
+  "apk": [
+    "bash",
+    "ca-certificates",
+    "coreutils",
+    "curl",
+    "file",
+    "git",
+    "git-lfs",
+    "jq",
+    "libxml2-utils",
+    "openssh-client",
+    "parallel",
+    "perl",
+    "tree",
+    "nodejs-current"
+  ],
+  "extras": {
+    "apk": [
+      "tree"
+    ],
+    "npm": [
+      "left-pad@1.3.0"
+    ],
+    "pip": [
+      "yq==3.4.3"
+    ],
+    "check": [
+      "tree --version",
+      "yq --version",
+      "test -d /opt/extras/npm/node_modules/left-pad"
+    ]
+  }
+}
