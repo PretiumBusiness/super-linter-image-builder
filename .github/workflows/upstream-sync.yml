@@ -10,7 +10,9 @@ name: Upstream sync
 #             (draft entries), build one image containing every mapped linter to
 #             check them, bump the pinned version and open a pull request.
 #
-# Needs on the runner: docker with buildx, python3, jq, git, gh.
+# The coverage job runs on a GitHub-hosted runner (it also runs for pull
+# requests). The sync job needs docker with buildx, python3, jq, git and gh on
+# the self-hosted runner and only runs from schedule or manual dispatch.
 # Opening the pull request needs the repository setting "Allow GitHub Actions to
 # create and approve pull requests". Without it the branch is still pushed.
 
@@ -50,7 +52,9 @@ concurrency:
 jobs:
   coverage:
     name: Mapping covers the pinned upstream version
-    runs-on: ${{ fromJSON(inputs.runner_labels || '["self-hosted", "pretium"]') }}
+    # Hosted runner on purpose: this job also runs for pull requests, and pull
+    # requests from forks must never run on the self-hosted runner.
+    runs-on: ubuntu-latest
     outputs:
       pinned: ${{ steps.pin.outputs.pinned }}
     steps:
