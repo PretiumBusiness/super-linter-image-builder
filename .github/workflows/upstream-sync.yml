@@ -1,0 +1,176 @@
+---
+name: Upstream sync
+
+# Keeps compiler/linters.json in step with upstream Super-Linter.
+#
+#   coverage  every run: the mapping must cover every VALIDATE_* flag of the
+#             pinned upstream version (upstream-version.txt). Fails otherwise.
+#   sync      scheduled and manual runs: if upstream has a newer release than
+#             the pinned one, add the linters that are missing from the mapping
+#             (draft entries), build one image containing every mapped linter to
+#             check them, bump the pinned version and open a pull request.
+#
+# Needs on the runner: docker with buildx, python3, jq, git, gh.
+# Opening the pull request needs the repository setting "Allow GitHub Actions to
+# create and approve pull requests". Without it the branch is still pushed.
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+    inputs:
+      force_tag:
+        description: Sync to this upstream tag even if it is not the latest (optional)
+        required: false
+        default: ""
+      runner_labels:
+        description: JSON array of runner labels
+        default: '["self-hosted", "pretium"]'
+        required: true
+  pull_request:
+    paths:
+      - compiler/**
+      - upstream-version.txt
+      - .github/workflows/upstream-sync.yml
+  push:
+    branches: [main]
+    paths:
+      - compiler/**
+      - upstream-version.txt
+
+permissions:
+  contents: write
+  pull-requests: write
+  packages: read
+
+concurrency:
+  group: upstream-sync-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  coverage:
+    name: Mapping covers the pinned upstream version
+    runs-on: ${{ fromJSON(inputs.runner_labels || '["self-hosted", "pretium"]') }}
+    outputs:
+      pinned: ${{ steps.pin.outputs.pinned }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: pin
+        run: echo "pinned=$(tr -d '[:space:]' < upstream-version.txt)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: super-linter/super-linter
+          ref: ${{ steps.pin.outputs.pinned }}
+          path: upstream
+          sparse-checkout: |
+            lib
+            dependencies
+
+      - name: Compare the mapping with upstream
+        run: |
+          set +e
+          python3 compiler/sync_mapping.py --upstream upstream --report coverage.md
+          rc=$?
+          cat coverage.md >> "$GITHUB_STEP_SUMMARY"
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::compiler/linters.json does not match upstream ${{ steps.pin.outputs.pinned }}. See the job summary."
+            exit 1
+          fi
+
+  sync:
+    name: Sync to a newer upstream release
+    needs: coverage
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ${{ fromJSON(inputs.runner_labels || '["self-hosted", "pretium"]') }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PINNED: ${{ needs.coverage.outputs.pinned }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find the latest upstream release
+        id: latest
+        run: |
+          latest="${{ inputs.force_tag }}"
+          if [ -z "$latest" ]; then
+            latest="$(gh api repos/super-linter/super-linter/releases/latest --jq .tag_name)"
+          fi
+          echo "pinned=$PINNED latest=$latest"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          newest="$(printf '%s\n%s\n' "$PINNED" "$latest" | sort -V | tail -1)"
+          if [ "$latest" != "$PINNED" ] && [ "$newest" = "$latest" ]; then
+            echo "behind=true" >> "$GITHUB_OUTPUT"
+            echo "Pinned version $PINNED is behind upstream $latest." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "behind=false" >> "$GITHUB_OUTPUT"
+            echo "Pinned version $PINNED is up to date (upstream $latest)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Check out the new upstream release
+        if: steps.latest.outputs.behind == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: super-linter/super-linter
+          ref: ${{ steps.latest.outputs.latest }}
+          path: upstream
+          sparse-checkout: |
+            lib
+            dependencies
+
+      - name: Add missing linters to the mapping
+        if: steps.latest.outputs.behind == 'true'
+        run: |
+          set +e
+          python3 compiler/sync_mapping.py --upstream upstream --write --report sync-report.md
+          echo "SYNC_RC=$?" >> "$GITHUB_ENV"
+          cat sync-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build an image with every mapped linter and run the tool checks
+        if: steps.latest.outputs.behind == 'true'
+        continue-on-error: true
+        env:
+          TAG: ${{ steps.latest.outputs.latest }}
+        run: |
+          docker system prune -af >/dev/null 2>&1 || true
+          python3 compiler/generate.py --all --upstream-tag "$TAG" \
+            --upstream-dockerfile upstream/Dockerfile --out build-all
+          docker buildx build build-all --provenance=false --sbom=false --load -t lean-all:check
+          docker run --rm -v "$PWD/build-all/checks.sh:/checks.sh:ro" --entrypoint bash \
+            lean-all:check /checks.sh 2>&1 | tee checks-all.log
+
+      - name: Open a pull request
+        if: steps.latest.outputs.behind == 'true'
+        env:
+          TAG: ${{ steps.latest.outputs.latest }}
+        run: |
+          echo "$TAG" > upstream-version.txt
+          branch="sync/upstream-${TAG}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -B "$branch"
+          git add upstream-version.txt compiler/linters.json
+          git commit -q -m "Sync mapping with upstream ${TAG}"
+          git push -f origin "$branch"
+          {
+            echo "Syncs the mapping with upstream Super-Linter ${TAG} (was ${PINNED})."
+            echo
+            cat sync-report.md
+            echo
+            echo "### Tool checks on an image with every mapped linter"
+            echo
+            if [ -f checks-all.log ]; then
+              echo "Failed: $(grep -c '^FAIL' checks-all.log || true)"
+              echo '```'
+              grep -E '^(FAIL|    )' checks-all.log | head -60 || true
+              echo '```'
+            else
+              echo "The image did not build. See the workflow run."
+            fi
+            echo
+            echo "Draft entries are verified only by their tool check. Review them before merging."
+          } > pr-body.md
+          gh pr create --base main --head "$branch" \
+            --title "Sync mapping with upstream ${TAG}" --body-file pr-body.md \
+            || echo "::warning::could not open a pull request. The branch $branch was pushed."

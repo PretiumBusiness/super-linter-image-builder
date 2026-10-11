@@ -55,7 +55,9 @@ jobs:
               # example is a real repo's exact flags, without the base.
               envs="base/opinionated.env toolchains/$p.env"
               [ "$p" = "ghwm" ] && envs="examples/ghwm.env"
-              for f in $envs; do test -f "$f" || { echo "::error::missing $f" >&2; exit 1; }; done
+              # Every mapped linter at once: verifies the whole mapping.
+              [ "$p" = "all-linters" ] && envs="ALL"
+              [ "$envs" = "ALL" ] || for f in $envs; do test -f "$f" || { echo "::error::missing $f" >&2; exit 1; }; done
               jq -nc --arg p "$p" --arg e "$envs" '{profile: $p, envs: $e}'
             done | jq -sc .
           )"
@@ -103,7 +105,7 @@ jobs:
       - name: Generate build context
         run: |
           args=()
-          for e in $ENVS; do args+=(--env "$e"); done
+          if [ "$ENVS" = "ALL" ]; then args=(--all); else for e in $ENVS; do args+=(--env "$e"); done; fi
           python3 compiler/generate.py "${args[@]}" \
             --upstream-tag "$TAG" --upstream-dockerfile upstream/Dockerfile --out build
           {

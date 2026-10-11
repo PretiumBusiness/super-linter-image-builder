@@ -74,9 +74,11 @@ def uniq(seq):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--env", action="append", required=True, help="env file with VALIDATE_*=true lines (repeatable)")
+    ap.add_argument("--env", action="append", default=[], help="env file with VALIDATE_*=true lines (repeatable)")
     ap.add_argument("--upstream-tag", required=True, help="e.g. v9.0.0")
     ap.add_argument("--upstream-dockerfile", required=True, help="the upstream Dockerfile at that tag")
+    ap.add_argument("--all", action="store_true",
+                    help="select every flag in the mapping (used to verify the whole mapping)")
     ap.add_argument("--exclude", action="append", default=[], metavar="FLAG",
                     help="drop a flag selected by the env files, e.g. NATURAL_LANGUAGE (repeatable)")
     ap.add_argument("--extra-apk", action="append", default=[], metavar="PKG",
@@ -87,7 +89,11 @@ def main():
 
     mapping = json.loads(Path(args.mapping).read_text())
     table = mapping["linters"]
+    if not args.env and not args.all:
+        sys.exit("give at least one --env file, or --all")
     flags = read_flags(args.env)
+    if args.all:
+        flags = uniq(flags + [f for f in table if f != "ALL_CODEBASE"])
     excluded = [e.removeprefix("VALIDATE_") for e in args.exclude]
     flags = [f for f in flags if f not in excluded]
     if not flags:
@@ -107,6 +113,7 @@ def main():
                + (["nodejs-current"] if npm_roots else []))
     path_extra = uniq([f"/venvs/{v}/bin" for v in venvs] + (["/node_modules/.bin"] if npm_roots else [])
                       + [p for s in sel for p in s.get("path", [])])
+    links = uniq(tuple(l) for s in sel for l in s.get("links", []))
     env_extra = {}
     for s in sel:
         env_extra.update(s.get("env", {}))
@@ -133,11 +140,20 @@ def main():
         L += ["FROM upstream AS npm-prune",
               "COPY prune-node-modules.js /prune-node-modules.js",
               "RUN node /prune-node-modules.js /node_modules /pruned " + " ".join(shlex.quote(r) for r in npm_roots), ""]
+    # Each category is collected in its own stage and copied as its own layer,
+    # so registries and Docker can download layers in parallel. cp -a --parents
+    # keeps symlinks and permissions. A path that does not exist upstream prints
+    # a warning instead of failing the build; the tool checks catch real gaps.
     for name, items in (("bins", bins), ("venvs", [f"/venvs/{v}" for v in venvs]),
                         ("dirs", dirs), ("action", ["/action"])):
-        L.append(f"FROM scratch AS {name}")
-        L += [f"COPY --from=upstream {p} {p}" for p in items]
-        L.append("")
+        if not items:
+            continue
+        L += [f"FROM upstream AS {name}-src",
+              "RUN mkdir /out; for p in " + " ".join(shlex.quote(i) for i in items) + "; do \\",
+              '      if [ -e "$p" ] || [ -L "$p" ]; then cp -a --parents "$p" /out; \\',
+              '      else echo "WARNING: missing upstream path: $p" >&2; fi; done',
+              f"FROM scratch AS {name}",
+              f"COPY --from={name}-src /out /", ""]
     L += [f"FROM {base}",
           "RUN apk add --no-cache \\",
           "  " + " \\\n  ".join(apk), "",
@@ -147,6 +163,9 @@ def main():
     L += ["COPY --from=dirs / /"] if dirs else []
     L += ["COPY --from=npm-prune /pruned /node_modules"] if npm_roots else []
     L += ["COPY --from=action / /", ""]
+    for target, link in links:
+        L.append(f"RUN [ -e {shlex.quote(link)} ] || ln -s {shlex.quote(target)} {shlex.quote(link)}")
+    L += [""] if links else []
     L += [f'ENV PATH="${{PATH}}:{":".join(path_extra)}"'] if path_extra else []
     L += ['ENV VERSION_FILE="/action/linterVersions.txt"', 'ENV IMAGE="lean"',
           'ENV RENOVATE_X_IGNORE_RE2="true"', 'ENV ARM_TTK_PSD1="/usr/lib/microsoft/arm-ttk/arm-ttk.psd1"',
@@ -163,7 +182,7 @@ def main():
     (out / "plan.json").write_text(json.dumps({
         "flags": flags, "upstream_tag": args.upstream_tag, "upstream_image": upstream_image,
         "baseline_variant": baseline, "baseline_image": f"{UPSTREAM_REPO}:{image_tag(baseline)}",
-        "python_base": base, "bins": bins, "dirs": dirs, "venvs": venvs,
+        "python_base": base, "links": links, "bins": bins, "dirs": dirs, "venvs": venvs,
         "npm_roots": npm_roots, "apk": apk}, indent=2) + "\n")
     print(baseline)
 

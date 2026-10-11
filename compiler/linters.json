@@ -1,76 +1,1174 @@
 {
   "_note": "Maps Super-Linter VALIDATE_* flags to what the lean image needs. Derived from the upstream v9.0.0 Dockerfile and lib/functions/linterCommands.sh. Paths are inside the upstream image. 'check' commands run inside the built image (see checks.sh) and are the safety net for anything missing here.",
-  "base_apk": ["bash", "ca-certificates", "coreutils", "curl", "file", "git", "git-lfs", "jq", "libxml2-utils", "openssh-client", "parallel", "perl"],
+  "base_apk": [
+    "bash",
+    "ca-certificates",
+    "coreutils",
+    "curl",
+    "file",
+    "git",
+    "git-lfs",
+    "jq",
+    "libxml2-utils",
+    "openssh-client",
+    "parallel",
+    "perl"
+  ],
   "npm_groups": {
-    "prettier": ["prettier"],
-    "markdownlint": ["markdownlint-cli"],
-    "textlint": ["textlint", "textlint-filter-rule-allowlist", "textlint-filter-rule-comments", "textlint-rule-terminology"],
-    "htmlhint": ["htmlhint"],
-    "stylelint": ["stylelint", "stylelint-config-standard", "stylelint-config-recommended-scss", "postcss-scss"],
-    "eslint": ["eslint", "eslint-plugin-n", "eslint-plugin-prettier", "prettier", "globals", "eslint-plugin-jsonc", "@typescript-eslint/eslint-plugin", "@typescript-eslint/parser", "eslint-plugin-vue", "eslint-plugin-react", "@eslint/js", "@eslint/eslintrc"],
-    "eslint_react": ["eslint-plugin-react-hooks", "eslint-plugin-jsx-a11y"]
+    "prettier": [
+      "prettier"
+    ],
+    "markdownlint": [
+      "markdownlint-cli"
+    ],
+    "textlint": [
+      "textlint",
+      "textlint-filter-rule-allowlist",
+      "textlint-filter-rule-comments",
+      "textlint-rule-terminology"
+    ],
+    "htmlhint": [
+      "htmlhint"
+    ],
+    "stylelint": [
+      "stylelint",
+      "stylelint-config-standard",
+      "stylelint-config-recommended-scss",
+      "postcss-scss"
+    ],
+    "eslint": [
+      "eslint",
+      "eslint-plugin-n",
+      "eslint-plugin-prettier",
+      "prettier",
+      "globals",
+      "eslint-plugin-jsonc",
+      "@typescript-eslint/eslint-plugin",
+      "@typescript-eslint/parser",
+      "eslint-plugin-vue",
+      "eslint-plugin-react",
+      "@eslint/js",
+      "@eslint/eslintrc"
+    ],
+    "eslint_react": [
+      "eslint-plugin-react-hooks",
+      "eslint-plugin-jsx-a11y"
+    ],
+    "biome": [
+      "@biomejs/biome"
+    ],
+    "coffeelint": [
+      "@coffeelint/cli"
+    ],
+    "commitlint": [
+      "commitlint",
+      "@commitlint/config-conventional"
+    ],
+    "groovy": [
+      "npm-groovy-lint"
+    ],
+    "jscpd": [
+      "jscpd"
+    ],
+    "spectral": [
+      "@stoplight/spectral-cli"
+    ],
+    "asl": [
+      "asl-validator"
+    ],
+    "renovate": [
+      "renovate"
+    ]
   },
   "linters": {
-    "EDITORCONFIG":           {"bins": ["/usr/bin/editorconfig-checker"], "check": ["editorconfig-checker --version"]},
-    "ENV":                    {"bins": ["/usr/bin/dotenv-linter"], "check": ["dotenv-linter --version"]},
-    "GITHUB_ACTIONS":         {"bins": ["/usr/bin/actionlint"], "check": ["actionlint -version"]},
-    "GITHUB_ACTIONS_ZIZMOR":  {"venvs": ["zizmor"], "check": ["zizmor --version"]},
-    "GITLEAKS":               {"bins": ["/usr/bin/gitleaks"], "check": ["gitleaks version"]},
-    "GIT_MERGE_CONFLICT_MARKERS": {"bins": ["/usr/bin/git-merge-conflict-markers"], "check": ["test -x /usr/bin/git-merge-conflict-markers"]},
-    "BASH":                   {"bins": ["/usr/bin/shellcheck"], "check": ["shellcheck --version"]},
-    "SHELL_SHFMT":            {"bins": ["/usr/bin/shfmt"], "check": ["shfmt --version"]},
-    "DOCKERFILE_HADOLINT":    {"bins": ["/usr/bin/hadolint"], "check": ["hadolint --version"]},
-    "XML":                    {"check": ["xmllint --version"]},
-    "YAML":                   {"venvs": ["yamllint"], "check": ["yamllint -c /action/lib/.automation/.yaml-lint.yml /tmp/fx/t.yml"]},
-
-    "MARKDOWN":               {"npm": ["markdownlint"], "check": ["markdownlint -c /action/lib/.automation/.markdown-lint.yml /tmp/fx/t.md"]},
-    "NATURAL_LANGUAGE":       {"npm": ["textlint"], "check": ["textlint -c /action/lib/.automation/.textlintrc /tmp/fx/t.md"]},
-
-    "JSON":                   {"npm": ["eslint"], "check": ["eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.json"]},
-    "JSONC":                  {"npm": ["eslint"], "check": ["eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.json"]},
-    "JAVASCRIPT_ES":          {"npm": ["eslint"], "check": ["eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.js"]},
-    "TYPESCRIPT_ES":          {"npm": ["eslint"], "check": ["eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.ts"]},
-    "VUE":                    {"npm": ["eslint"], "check": ["eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.js"]},
-    "JSX":                    {"npm": ["eslint", "eslint_react"], "check": ["eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.js"]},
-    "TSX":                    {"npm": ["eslint", "eslint_react"], "check": ["eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.ts"]},
-
-    "JSON_PRETTIER":          {"npm": ["prettier"], "check": ["prettier --check /tmp/fx/t.json"]},
-    "JSONC_PRETTIER":         {"npm": ["prettier"], "check": ["prettier --check /tmp/fx/t.json"]},
-    "JAVASCRIPT_PRETTIER":    {"npm": ["prettier"], "check": ["prettier --check /tmp/fx/t.js"]},
-    "TYPESCRIPT_PRETTIER":    {"npm": ["prettier"], "check": ["prettier --check /tmp/fx/t.ts"]},
-    "JSX_PRETTIER":           {"npm": ["prettier"], "check": ["prettier --check /tmp/fx/t.js"]},
-    "VUE_PRETTIER":           {"npm": ["prettier"], "check": ["prettier --version"]},
-    "CSS_PRETTIER":           {"npm": ["prettier"], "check": ["prettier --check /tmp/fx/t.css"]},
-    "HTML_PRETTIER":          {"npm": ["prettier"], "check": ["prettier --check /tmp/fx/t.html"]},
-    "YAML_PRETTIER":          {"npm": ["prettier"], "check": ["prettier --check /tmp/fx/t.yml"]},
-    "MARKDOWN_PRETTIER":      {"npm": ["prettier"], "check": ["prettier --check /tmp/fx/t.md"]},
-    "CSS":                    {"npm": ["stylelint"], "check": ["stylelint --config /action/lib/.automation/stylelint.config.mjs /tmp/fx/t.css"]},
-    "HTML":                   {"npm": ["htmlhint"], "check": ["htmlhint --config /action/lib/.automation/.htmlhintrc /tmp/fx/t.html"]},
-
-    "PYTHON_BLACK":           {"venvs": ["black"], "check": ["black --version"]},
-    "PYTHON_FLAKE8":          {"venvs": ["flake8"], "check": ["flake8 --version"]},
-    "PYTHON_ISORT":           {"venvs": ["isort"], "check": ["isort --version"]},
-    "PYTHON_MYPY":            {"venvs": ["mypy"], "check": ["mypy --version"]},
-    "PYTHON_PYLINT":          {"venvs": ["pylint"], "check": ["pylint --version"]},
-    "PYTHON_RUFF":            {"venvs": ["ruff"], "check": ["ruff --version"]},
-    "PYTHON_RUFF_FORMAT":     {"venvs": ["ruff"], "check": ["ruff --version"]},
-    "SPELL_CODESPELL":        {"venvs": ["codespell"], "check": ["codespell --version"]},
-
-    "CPP":                    {"venvs": ["cpplint"], "check": ["cpplint --version"]},
-    "CLANG_FORMAT":           {"bins": ["/usr/bin/clang-format"], "apk": ["libstdc++", "libgcc"], "check": ["clang-format --version"]},
-
-    "JAVA":                   {"bins": ["/usr/bin/checkstyle"], "apk": ["openjdk21-jre"], "check": ["java -jar /usr/bin/checkstyle --version"]},
-    "GOOGLE_JAVA_FORMAT":     {"bins": ["/usr/bin/google-java-format"], "apk": ["openjdk21-jre"], "check": ["java -jar /usr/bin/google-java-format --version"]},
-
-    "CSHARP":                 {"dirs": ["/usr/share/dotnet"], "upstream": "standard", "baseline": "standard", "apk": ["icu-libs", "krb5-libs", "libgcc", "libintl", "libstdc++", "zlib"], "path": ["/var/cache/dotnet/tools", "/usr/share/dotnet"], "env": {"DOTNET_CLI_TELEMETRY_OPTOUT": "1"}, "check": ["dotnet --version"]},
-    "DOTNET_SLN_FORMAT_ANALYZERS":  {"dirs": ["/usr/share/dotnet"], "upstream": "standard", "baseline": "standard", "apk": ["icu-libs", "krb5-libs", "libgcc", "libintl", "libstdc++", "zlib"], "path": ["/var/cache/dotnet/tools", "/usr/share/dotnet"], "env": {"DOTNET_CLI_TELEMETRY_OPTOUT": "1"}, "check": ["dotnet --version"]},
-    "DOTNET_SLN_FORMAT_STYLE":      {"dirs": ["/usr/share/dotnet"], "upstream": "standard", "baseline": "standard", "apk": ["icu-libs", "krb5-libs", "libgcc", "libintl", "libstdc++", "zlib"], "path": ["/var/cache/dotnet/tools", "/usr/share/dotnet"], "env": {"DOTNET_CLI_TELEMETRY_OPTOUT": "1"}, "check": ["dotnet --version"]},
-    "DOTNET_SLN_FORMAT_WHITESPACE": {"dirs": ["/usr/share/dotnet"], "upstream": "standard", "baseline": "standard", "apk": ["icu-libs", "krb5-libs", "libgcc", "libintl", "libstdc++", "zlib"], "path": ["/var/cache/dotnet/tools", "/usr/share/dotnet"], "env": {"DOTNET_CLI_TELEMETRY_OPTOUT": "1"}, "check": ["dotnet --version"]},
-
-    "RUST_2015":              {"apk": ["rustfmt"], "baseline": "standard", "check": ["rustfmt --version"]},
-    "RUST_2018":              {"apk": ["rustfmt"], "baseline": "standard", "check": ["rustfmt --version"]},
-    "RUST_2021":              {"apk": ["rustfmt"], "baseline": "standard", "check": ["rustfmt --version"]},
-    "RUST_2024":              {"apk": ["rustfmt"], "baseline": "standard", "check": ["rustfmt --version"]},
-    "RUST_CLIPPY":            {"apk": ["rust-clippy", "rustfmt"], "baseline": "standard", "check": ["cargo clippy --version"]}
+    "ANSIBLE": {
+      "venvs": [
+        "ansible-lint"
+      ],
+      "check": [
+        "ansible-lint --version"
+      ]
+    },
+    "ARM": {
+      "dirs": [
+        "/usr/share/powershell",
+        "/usr/lib/microsoft"
+      ],
+      "upstream": "standard",
+      "baseline": "standard",
+      "apk": [
+        "icu-libs",
+        "krb5-libs",
+        "libgcc",
+        "libintl",
+        "libstdc++",
+        "zlib"
+      ],
+      "links": [
+        [
+          "/usr/share/powershell/pwsh",
+          "/usr/bin/pwsh"
+        ],
+        [
+          "/usr/lib/microsoft/arm-ttk/arm-ttk.psd1",
+          "/usr/bin/arm-ttk"
+        ]
+      ],
+      "env": {
+        "POWERSHELL_TELEMETRY_OPTOUT": "1",
+        "ARM_TTK_PSD1": "/usr/lib/microsoft/arm-ttk/arm-ttk.psd1"
+      },
+      "check": [
+        "pwsh -NoProfile -Command 'Import-Module /usr/lib/microsoft/arm-ttk/arm-ttk.psd1'"
+      ]
+    },
+    "BASH": {
+      "bins": [
+        "/usr/bin/shellcheck"
+      ],
+      "check": [
+        "shellcheck --version"
+      ]
+    },
+    "BASH_EXEC": {
+      "bins": [
+        "/usr/bin/bash-exec"
+      ],
+      "check": [
+        "test -x /usr/bin/bash-exec"
+      ]
+    },
+    "BIOME_FORMAT": {
+      "npm": [
+        "biome"
+      ],
+      "check": [
+        "biome --version"
+      ]
+    },
+    "BIOME_LINT": {
+      "npm": [
+        "biome"
+      ],
+      "check": [
+        "biome --version"
+      ]
+    },
+    "CHECKOV": {
+      "venvs": [
+        "checkov"
+      ],
+      "bins": [
+        "/usr/bin/helm",
+        "/usr/bin/kustomize"
+      ],
+      "check": [
+        "checkov --version",
+        "helm version --short"
+      ]
+    },
+    "CLANG_FORMAT": {
+      "bins": [
+        "/usr/bin/clang-format"
+      ],
+      "apk": [
+        "libstdc++",
+        "libgcc"
+      ],
+      "check": [
+        "clang-format --version"
+      ]
+    },
+    "CLOJURE": {
+      "bins": [
+        "/usr/bin/clj-kondo"
+      ],
+      "check": [
+        "clj-kondo --version"
+      ]
+    },
+    "CLOUDFORMATION": {
+      "venvs": [
+        "cfn-lint"
+      ],
+      "check": [
+        "cfn-lint --version"
+      ]
+    },
+    "COFFEESCRIPT": {
+      "npm": [
+        "coffeelint"
+      ],
+      "check": [
+        "coffeelint --version"
+      ]
+    },
+    "CPP": {
+      "venvs": [
+        "cpplint"
+      ],
+      "check": [
+        "cpplint --version"
+      ]
+    },
+    "CSHARP": {
+      "dirs": [
+        "/usr/share/dotnet"
+      ],
+      "upstream": "standard",
+      "baseline": "standard",
+      "apk": [
+        "icu-libs",
+        "krb5-libs",
+        "libgcc",
+        "libintl",
+        "libstdc++",
+        "zlib"
+      ],
+      "path": [
+        "/var/cache/dotnet/tools",
+        "/usr/share/dotnet"
+      ],
+      "env": {
+        "DOTNET_CLI_TELEMETRY_OPTOUT": "1"
+      },
+      "check": [
+        "dotnet --version"
+      ]
+    },
+    "CSS": {
+      "npm": [
+        "stylelint"
+      ],
+      "check": [
+        "stylelint --config /action/lib/.automation/stylelint.config.mjs /tmp/fx/t.css"
+      ]
+    },
+    "CSS_PRETTIER": {
+      "npm": [
+        "prettier"
+      ],
+      "check": [
+        "prettier --check /tmp/fx/t.css"
+      ]
+    },
+    "DART": {
+      "dirs": [
+        "/usr/lib/dart"
+      ],
+      "apk": [
+        "gcompat",
+        "libstdc++",
+        "libgcc"
+      ],
+      "path": [
+        "/usr/lib/dart/bin"
+      ],
+      "env": {
+        "DART_SDK": "/usr/lib/dart"
+      },
+      "check": [
+        "dart --version"
+      ]
+    },
+    "DOCKERFILE_HADOLINT": {
+      "bins": [
+        "/usr/bin/hadolint"
+      ],
+      "check": [
+        "hadolint --version"
+      ]
+    },
+    "DOTNET_SLN_FORMAT_ANALYZERS": {
+      "dirs": [
+        "/usr/share/dotnet"
+      ],
+      "upstream": "standard",
+      "baseline": "standard",
+      "apk": [
+        "icu-libs",
+        "krb5-libs",
+        "libgcc",
+        "libintl",
+        "libstdc++",
+        "zlib"
+      ],
+      "path": [
+        "/var/cache/dotnet/tools",
+        "/usr/share/dotnet"
+      ],
+      "env": {
+        "DOTNET_CLI_TELEMETRY_OPTOUT": "1"
+      },
+      "check": [
+        "dotnet --version"
+      ]
+    },
+    "DOTNET_SLN_FORMAT_STYLE": {
+      "dirs": [
+        "/usr/share/dotnet"
+      ],
+      "upstream": "standard",
+      "baseline": "standard",
+      "apk": [
+        "icu-libs",
+        "krb5-libs",
+        "libgcc",
+        "libintl",
+        "libstdc++",
+        "zlib"
+      ],
+      "path": [
+        "/var/cache/dotnet/tools",
+        "/usr/share/dotnet"
+      ],
+      "env": {
+        "DOTNET_CLI_TELEMETRY_OPTOUT": "1"
+      },
+      "check": [
+        "dotnet --version"
+      ]
+    },
+    "DOTNET_SLN_FORMAT_WHITESPACE": {
+      "dirs": [
+        "/usr/share/dotnet"
+      ],
+      "upstream": "standard",
+      "baseline": "standard",
+      "apk": [
+        "icu-libs",
+        "krb5-libs",
+        "libgcc",
+        "libintl",
+        "libstdc++",
+        "zlib"
+      ],
+      "path": [
+        "/var/cache/dotnet/tools",
+        "/usr/share/dotnet"
+      ],
+      "env": {
+        "DOTNET_CLI_TELEMETRY_OPTOUT": "1"
+      },
+      "check": [
+        "dotnet --version"
+      ]
+    },
+    "EDITORCONFIG": {
+      "bins": [
+        "/usr/bin/editorconfig-checker"
+      ],
+      "check": [
+        "editorconfig-checker --version"
+      ]
+    },
+    "ENV": {
+      "bins": [
+        "/usr/bin/dotenv-linter"
+      ],
+      "check": [
+        "dotenv-linter --version"
+      ]
+    },
+    "GITHUB_ACTIONS": {
+      "bins": [
+        "/usr/bin/actionlint"
+      ],
+      "check": [
+        "actionlint -version"
+      ]
+    },
+    "GITHUB_ACTIONS_ZIZMOR": {
+      "venvs": [
+        "zizmor"
+      ],
+      "check": [
+        "zizmor --version"
+      ]
+    },
+    "GITLEAKS": {
+      "bins": [
+        "/usr/bin/gitleaks"
+      ],
+      "check": [
+        "gitleaks version"
+      ]
+    },
+    "GIT_COMMITLINT": {
+      "npm": [
+        "commitlint"
+      ],
+      "check": [
+        "commitlint --version"
+      ]
+    },
+    "GIT_MERGE_CONFLICT_MARKERS": {
+      "bins": [
+        "/usr/bin/git-merge-conflict-markers"
+      ],
+      "check": [
+        "test -x /usr/bin/git-merge-conflict-markers"
+      ]
+    },
+    "GO": {
+      "dirs": [
+        "/usr/lib/go"
+      ],
+      "bins": [
+        "/usr/bin/golangci-lint"
+      ],
+      "path": [
+        "/usr/lib/go/bin"
+      ],
+      "check": [
+        "golangci-lint --version",
+        "go version"
+      ]
+    },
+    "GOOGLE_JAVA_FORMAT": {
+      "bins": [
+        "/usr/bin/google-java-format"
+      ],
+      "apk": [
+        "openjdk21-jre"
+      ],
+      "check": [
+        "java -jar /usr/bin/google-java-format --version"
+      ]
+    },
+    "GO_MODULES": {
+      "dirs": [
+        "/usr/lib/go"
+      ],
+      "bins": [
+        "/usr/bin/golangci-lint"
+      ],
+      "path": [
+        "/usr/lib/go/bin"
+      ],
+      "check": [
+        "golangci-lint --version",
+        "go version"
+      ]
+    },
+    "GO_RELEASER": {
+      "bins": [
+        "/usr/bin/goreleaser"
+      ],
+      "check": [
+        "goreleaser --version"
+      ]
+    },
+    "GRAPHQL_PRETTIER": {
+      "npm": [
+        "prettier"
+      ],
+      "check": [
+        "prettier --version"
+      ]
+    },
+    "GROOVY": {
+      "npm": [
+        "groovy"
+      ],
+      "apk": [
+        "openjdk21-jre"
+      ],
+      "check": [
+        "npm-groovy-lint --version"
+      ]
+    },
+    "HTML": {
+      "npm": [
+        "htmlhint"
+      ],
+      "check": [
+        "htmlhint --config /action/lib/.automation/.htmlhintrc /tmp/fx/t.html"
+      ]
+    },
+    "HTML_PRETTIER": {
+      "npm": [
+        "prettier"
+      ],
+      "check": [
+        "prettier --check /tmp/fx/t.html"
+      ]
+    },
+    "JAVA": {
+      "bins": [
+        "/usr/bin/checkstyle"
+      ],
+      "apk": [
+        "openjdk21-jre"
+      ],
+      "check": [
+        "java -jar /usr/bin/checkstyle --version"
+      ]
+    },
+    "JAVASCRIPT_ES": {
+      "npm": [
+        "eslint"
+      ],
+      "check": [
+        "eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.js"
+      ]
+    },
+    "JAVASCRIPT_PRETTIER": {
+      "npm": [
+        "prettier"
+      ],
+      "check": [
+        "prettier --check /tmp/fx/t.js"
+      ]
+    },
+    "JSCPD": {
+      "npm": [
+        "jscpd"
+      ],
+      "check": [
+        "jscpd --version"
+      ]
+    },
+    "JSON": {
+      "npm": [
+        "eslint"
+      ],
+      "check": [
+        "eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.json"
+      ]
+    },
+    "JSONC": {
+      "npm": [
+        "eslint"
+      ],
+      "check": [
+        "eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.json"
+      ]
+    },
+    "JSONC_PRETTIER": {
+      "npm": [
+        "prettier"
+      ],
+      "check": [
+        "prettier --check /tmp/fx/t.json"
+      ]
+    },
+    "JSON_PRETTIER": {
+      "npm": [
+        "prettier"
+      ],
+      "check": [
+        "prettier --check /tmp/fx/t.json"
+      ]
+    },
+    "JSX": {
+      "npm": [
+        "eslint",
+        "eslint_react"
+      ],
+      "check": [
+        "eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.js"
+      ]
+    },
+    "JSX_PRETTIER": {
+      "npm": [
+        "prettier"
+      ],
+      "check": [
+        "prettier --check /tmp/fx/t.js"
+      ]
+    },
+    "KOTLIN": {
+      "bins": [
+        "/usr/bin/ktlint"
+      ],
+      "apk": [
+        "openjdk21-jre"
+      ],
+      "check": [
+        "ktlint --version"
+      ]
+    },
+    "KUBERNETES_KUBECONFORM": {
+      "bins": [
+        "/usr/bin/kubeconform"
+      ],
+      "check": [
+        "kubeconform -v"
+      ]
+    },
+    "LATEX": {
+      "bins": [
+        "/usr/bin/chktex"
+      ],
+      "apk": [
+        "ncurses-libs"
+      ],
+      "check": [
+        "chktex --version"
+      ]
+    },
+    "LUA": {
+      "dirs": [
+        "/usr/local/lib/luarocks",
+        "/usr/local/share/lua",
+        "/usr/local/lib/lua",
+        "/usr/local/bin/luacheck"
+      ],
+      "apk": [
+        "lua5.4"
+      ],
+      "links": [
+        [
+          "/usr/bin/lua5.4",
+          "/usr/bin/lua"
+        ]
+      ],
+      "check": [
+        "luacheck --version"
+      ]
+    },
+    "MARKDOWN": {
+      "npm": [
+        "markdownlint"
+      ],
+      "check": [
+        "markdownlint -c /action/lib/.automation/.markdown-lint.yml /tmp/fx/t.md"
+      ]
+    },
+    "MARKDOWN_PRETTIER": {
+      "npm": [
+        "prettier"
+      ],
+      "check": [
+        "prettier --check /tmp/fx/t.md"
+      ]
+    },
+    "NATURAL_LANGUAGE": {
+      "npm": [
+        "textlint"
+      ],
+      "check": [
+        "textlint -c /action/lib/.automation/.textlintrc /tmp/fx/t.md"
+      ]
+    },
+    "OPENAPI": {
+      "npm": [
+        "spectral"
+      ],
+      "check": [
+        "spectral --version"
+      ]
+    },
+    "PERL": {
+      "dirs": [
+        "/usr/local/share/perl5",
+        "/usr/local/lib/perl5",
+        "/usr/local/bin/perlcritic"
+      ],
+      "check": [
+        "perlcritic --version"
+      ]
+    },
+    "PHP_BUILTIN": {
+      "dirs": [
+        "/php-composer"
+      ],
+      "bins": [
+        "/usr/bin/composer"
+      ],
+      "apk": [
+        "php85",
+        "php85-ctype",
+        "php85-curl",
+        "php85-dom",
+        "php85-iconv",
+        "php85-pecl-igbinary",
+        "php85-intl",
+        "php85-mbstring",
+        "php85-openssl",
+        "php85-phar",
+        "php85-simplexml",
+        "php85-tokenizer",
+        "php85-xmlwriter"
+      ],
+      "path": [
+        "/php-composer/vendor/bin"
+      ],
+      "env": {
+        "PHP_COMPOSER_PACKAGES_DIR": "/php-composer/vendor"
+      },
+      "links": [
+        [
+          "/usr/bin/php85",
+          "/usr/bin/php"
+        ]
+      ],
+      "check": [
+        "php --version"
+      ]
+    },
+    "PHP_PHPCS": {
+      "dirs": [
+        "/php-composer"
+      ],
+      "bins": [
+        "/usr/bin/composer"
+      ],
+      "apk": [
+        "php85",
+        "php85-ctype",
+        "php85-curl",
+        "php85-dom",
+        "php85-iconv",
+        "php85-pecl-igbinary",
+        "php85-intl",
+        "php85-mbstring",
+        "php85-openssl",
+        "php85-phar",
+        "php85-simplexml",
+        "php85-tokenizer",
+        "php85-xmlwriter"
+      ],
+      "path": [
+        "/php-composer/vendor/bin"
+      ],
+      "env": {
+        "PHP_COMPOSER_PACKAGES_DIR": "/php-composer/vendor"
+      },
+      "links": [
+        [
+          "/usr/bin/php85",
+          "/usr/bin/php"
+        ]
+      ],
+      "check": [
+        "phpcs --version"
+      ]
+    },
+    "PHP_PHPSTAN": {
+      "dirs": [
+        "/php-composer"
+      ],
+      "bins": [
+        "/usr/bin/composer"
+      ],
+      "apk": [
+        "php85",
+        "php85-ctype",
+        "php85-curl",
+        "php85-dom",
+        "php85-iconv",
+        "php85-pecl-igbinary",
+        "php85-intl",
+        "php85-mbstring",
+        "php85-openssl",
+        "php85-phar",
+        "php85-simplexml",
+        "php85-tokenizer",
+        "php85-xmlwriter"
+      ],
+      "path": [
+        "/php-composer/vendor/bin"
+      ],
+      "env": {
+        "PHP_COMPOSER_PACKAGES_DIR": "/php-composer/vendor"
+      },
+      "links": [
+        [
+          "/usr/bin/php85",
+          "/usr/bin/php"
+        ]
+      ],
+      "check": [
+        "phpstan --version"
+      ]
+    },
+    "PHP_PSALM": {
+      "dirs": [
+        "/php-composer"
+      ],
+      "bins": [
+        "/usr/bin/composer"
+      ],
+      "apk": [
+        "php85",
+        "php85-ctype",
+        "php85-curl",
+        "php85-dom",
+        "php85-iconv",
+        "php85-pecl-igbinary",
+        "php85-intl",
+        "php85-mbstring",
+        "php85-openssl",
+        "php85-phar",
+        "php85-simplexml",
+        "php85-tokenizer",
+        "php85-xmlwriter"
+      ],
+      "path": [
+        "/php-composer/vendor/bin"
+      ],
+      "env": {
+        "PHP_COMPOSER_PACKAGES_DIR": "/php-composer/vendor"
+      },
+      "links": [
+        [
+          "/usr/bin/php85",
+          "/usr/bin/php"
+        ]
+      ],
+      "check": [
+        "psalm --version"
+      ]
+    },
+    "POWERSHELL": {
+      "dirs": [
+        "/usr/share/powershell"
+      ],
+      "upstream": "standard",
+      "baseline": "standard",
+      "apk": [
+        "icu-libs",
+        "krb5-libs",
+        "libgcc",
+        "libintl",
+        "libstdc++",
+        "zlib"
+      ],
+      "links": [
+        [
+          "/usr/share/powershell/pwsh",
+          "/usr/bin/pwsh"
+        ]
+      ],
+      "env": {
+        "POWERSHELL_TELEMETRY_OPTOUT": "1"
+      },
+      "check": [
+        "pwsh -NoProfile -Command 'Get-Module -ListAvailable PSScriptAnalyzer | Select-Object -First 1 | ForEach-Object { $_.Version.ToString() }'"
+      ]
+    },
+    "PRE_COMMIT": {
+      "venvs": [
+        "pre-commit"
+      ],
+      "check": [
+        "pre-commit --version"
+      ]
+    },
+    "PROTOBUF": {
+      "bins": [
+        "/usr/bin/protolint"
+      ],
+      "check": [
+        "protolint version"
+      ]
+    },
+    "PYTHON_BLACK": {
+      "venvs": [
+        "black"
+      ],
+      "check": [
+        "black --version"
+      ]
+    },
+    "PYTHON_FLAKE8": {
+      "venvs": [
+        "flake8"
+      ],
+      "check": [
+        "flake8 --version"
+      ]
+    },
+    "PYTHON_ISORT": {
+      "venvs": [
+        "isort"
+      ],
+      "check": [
+        "isort --version"
+      ]
+    },
+    "PYTHON_MYPY": {
+      "venvs": [
+        "mypy"
+      ],
+      "check": [
+        "mypy --version"
+      ]
+    },
+    "PYTHON_PYLINT": {
+      "venvs": [
+        "pylint"
+      ],
+      "check": [
+        "pylint --version"
+      ]
+    },
+    "PYTHON_RUFF": {
+      "venvs": [
+        "ruff"
+      ],
+      "check": [
+        "ruff --version"
+      ]
+    },
+    "PYTHON_RUFF_FORMAT": {
+      "venvs": [
+        "ruff"
+      ],
+      "check": [
+        "ruff --version"
+      ]
+    },
+    "R": {
+      "dirs": [
+        "/usr/lib/R"
+      ],
+      "apk": [
+        "R"
+      ],
+      "check": [
+        "R --slave -e 'library(lintr)'"
+      ]
+    },
+    "RENOVATE": {
+      "npm": [
+        "renovate"
+      ],
+      "env": {
+        "RENOVATE_X_IGNORE_RE2": "true"
+      },
+      "check": [
+        "renovate-config-validator --help"
+      ]
+    },
+    "RUBY": {
+      "dirs": [
+        "/usr/local/bundle"
+      ],
+      "apk": [
+        "ruby"
+      ],
+      "path": [
+        "/usr/local/bundle/bin",
+        "/usr/local/bundle/gems/bin"
+      ],
+      "env": {
+        "GEM_HOME": "/usr/local/bundle"
+      },
+      "check": [
+        "rubocop --version"
+      ]
+    },
+    "RUST_2015": {
+      "apk": [
+        "rustfmt"
+      ],
+      "baseline": "standard",
+      "check": [
+        "rustfmt --version"
+      ]
+    },
+    "RUST_2018": {
+      "apk": [
+        "rustfmt"
+      ],
+      "baseline": "standard",
+      "check": [
+        "rustfmt --version"
+      ]
+    },
+    "RUST_2021": {
+      "apk": [
+        "rustfmt"
+      ],
+      "baseline": "standard",
+      "check": [
+        "rustfmt --version"
+      ]
+    },
+    "RUST_2024": {
+      "apk": [
+        "rustfmt"
+      ],
+      "baseline": "standard",
+      "check": [
+        "rustfmt --version"
+      ]
+    },
+    "RUST_CLIPPY": {
+      "apk": [
+        "rust-clippy",
+        "rustfmt"
+      ],
+      "baseline": "standard",
+      "check": [
+        "cargo clippy --version"
+      ]
+    },
+    "SCALAFMT": {
+      "bins": [
+        "/usr/bin/scalafmt"
+      ],
+      "apk": [
+        "openjdk21-jre",
+        "gcompat"
+      ],
+      "check": [
+        "scalafmt --version"
+      ]
+    },
+    "SHELL_SHFMT": {
+      "bins": [
+        "/usr/bin/shfmt"
+      ],
+      "check": [
+        "shfmt --version"
+      ]
+    },
+    "SNAKEMAKE_LINT": {
+      "venvs": [
+        "snakemake"
+      ],
+      "check": [
+        "snakemake --version"
+      ]
+    },
+    "SNAKEMAKE_SNAKEFMT": {
+      "venvs": [
+        "snakefmt"
+      ],
+      "check": [
+        "snakefmt --version"
+      ]
+    },
+    "SPELL_CODESPELL": {
+      "venvs": [
+        "codespell"
+      ],
+      "check": [
+        "codespell --version"
+      ]
+    },
+    "SQLFLUFF": {
+      "venvs": [
+        "sqlfluff"
+      ],
+      "check": [
+        "sqlfluff --version"
+      ]
+    },
+    "STATES": {
+      "npm": [
+        "asl"
+      ],
+      "check": [
+        "asl-validator --help"
+      ]
+    },
+    "TERRAFORM_FMT": {
+      "bins": [
+        "/usr/bin/terraform"
+      ],
+      "check": [
+        "terraform version"
+      ]
+    },
+    "TERRAFORM_TFLINT": {
+      "bins": [
+        "/usr/bin/tflint"
+      ],
+      "dirs": [
+        "/root/.tflint.d"
+      ],
+      "env": {
+        "TFLINT_PLUGIN_DIR": "/root/.tflint.d/plugins"
+      },
+      "check": [
+        "tflint --version"
+      ]
+    },
+    "TERRAGRUNT": {
+      "bins": [
+        "/usr/bin/terragrunt"
+      ],
+      "check": [
+        "terragrunt --version"
+      ]
+    },
+    "TRIVY": {
+      "bins": [
+        "/usr/bin/trivy"
+      ],
+      "dirs": [
+        "/contrib"
+      ],
+      "check": [
+        "trivy --version"
+      ]
+    },
+    "TSX": {
+      "npm": [
+        "eslint",
+        "eslint_react"
+      ],
+      "check": [
+        "eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.ts"
+      ]
+    },
+    "TYPESCRIPT_ES": {
+      "npm": [
+        "eslint"
+      ],
+      "check": [
+        "eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.ts"
+      ]
+    },
+    "TYPESCRIPT_PRETTIER": {
+      "npm": [
+        "prettier"
+      ],
+      "check": [
+        "prettier --check /tmp/fx/t.ts"
+      ]
+    },
+    "VUE": {
+      "npm": [
+        "eslint"
+      ],
+      "check": [
+        "eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.js"
+      ]
+    },
+    "VUE_PRETTIER": {
+      "npm": [
+        "prettier"
+      ],
+      "check": [
+        "prettier --version"
+      ]
+    },
+    "XML": {
+      "check": [
+        "xmllint --version"
+      ]
+    },
+    "YAML": {
+      "venvs": [
+        "yamllint"
+      ],
+      "check": [
+        "yamllint -c /action/lib/.automation/.yaml-lint.yml /tmp/fx/t.yml"
+      ]
+    },
+    "YAML_PRETTIER": {
+      "npm": [
+        "prettier"
+      ],
+      "check": [
+        "prettier --check /tmp/fx/t.yml"
+      ]
+    }
   }
 }
