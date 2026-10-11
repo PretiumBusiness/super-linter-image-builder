@@ -54,12 +54,21 @@ users will see.
 - Whether the Docker version on a hosted runner pulls zstd layers efficiently
   is one of the things this benchmark checks.
 
+## What the benchmark covers
+
+The tool is fully configurable, so the benchmark is only a set of example
+combinations: the opinionated base plus one example toolchain each
+(`toolchains/`), and the ghwm repository's exact flags (`examples/ghwm.env`).
+There are no single-linter profiles on purpose: a repository that needs one
+linter has no reason to use Super-Linter. `base-only` measures the base on its
+own, as the floor for the toolchains.
+
 ## Results
 
 Run 38144305432, upstream v9.0.0, runner `[self-hosted, pretium]` (Proxmox VM,
 2 CPU, 4 GB RAM, 40 GB disk), median of 3 cold pulls. Baseline is upstream
 `slim-v9.0.0`. Every profile except `ghwm` is the shared base
-(`profiles/common.env`) plus its stack flags. Raw data is on the `bench-results`
+(`base/opinionated.env`) plus its stack flags. Raw data is on the `bench-results`
 branch under `results/2026-10-11-run-38144305432/`.
 
 | Profile | Baseline pull | Lean gzip | Lean zstd | Unpacked: base to lean | Compressed: base to lean | Build gzip+zstd (incl. push) |

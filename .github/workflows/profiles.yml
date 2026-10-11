@@ -1,5 +1,5 @@
 ---
-name: Profiles benchmark
+name: Toolchain benchmark
 
 # For each stack profile: generate a lean image from its VALIDATE_* flags,
 # push it (gzip and zstd layers) to GHCR, verify every tool runs, then measure
@@ -47,13 +47,15 @@ jobs:
         env:
           PROFILES: ${{ inputs.profiles }}
         run: |
-          all="ghwm python java dotnet rust c-cpp frontend-vanilla frontend-react frontend-vue frontend-angular frontend-svelte"
+          all="base-only ghwm python java dotnet rust c-cpp frontend-vanilla frontend-react frontend-vue frontend-angular frontend-svelte"
           if [ "$PROFILES" = "all" ]; then list="$all"; else list="${PROFILES//,/ }"; fi
           json="$(
             for p in $list; do
-              test -f "profiles/$p.env" || { echo "::error::unknown profile $p" >&2; exit 1; }
-              envs="profiles/common.env profiles/$p.env"
-              [ "$p" = "ghwm" ] && envs="profiles/ghwm.env"
+              # Toolchains are examples: opinionated base + one stack. The ghwm
+              # example is a real repo's exact flags, without the base.
+              envs="base/opinionated.env toolchains/$p.env"
+              [ "$p" = "ghwm" ] && envs="examples/ghwm.env"
+              for f in $envs; do test -f "$f" || { echo "::error::missing $f" >&2; exit 1; }; done
               jq -nc --arg p "$p" --arg e "$envs" '{profile: $p, envs: $e}'
             done | jq -sc .
           )"

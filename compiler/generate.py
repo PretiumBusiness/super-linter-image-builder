@@ -2,7 +2,7 @@
 """Generate a lean Super-Linter image build context from VALIDATE_* flags.
 
 Usage:
-  compiler/generate.py --env profiles/common.env --env profiles/python.env \\
+  compiler/generate.py --env base/opinionated.env --env toolchains/python.env \\
       --upstream-tag v9.0.0 --upstream-dockerfile path/to/upstream/Dockerfile \\
       --out build/python
 
@@ -11,6 +11,10 @@ Writes into --out:
   prune-node-modules.js    helper used by the Dockerfile
   checks.sh                runs inside the built image to verify every tool
   plan.json                what was selected (also names the baseline variant)
+
+Everything is configurable. The base and the toolchains are only env files, so
+any combination works: leave the base out, add several toolchains, drop single
+flags with --exclude, or add Alpine packages with --extra-apk.
 
 Prints the upstream baseline variant ("slim" or "standard") to compare against.
 """
@@ -73,6 +77,10 @@ def main():
     ap.add_argument("--env", action="append", required=True, help="env file with VALIDATE_*=true lines (repeatable)")
     ap.add_argument("--upstream-tag", required=True, help="e.g. v9.0.0")
     ap.add_argument("--upstream-dockerfile", required=True, help="the upstream Dockerfile at that tag")
+    ap.add_argument("--exclude", action="append", default=[], metavar="FLAG",
+                    help="drop a flag selected by the env files, e.g. NATURAL_LANGUAGE (repeatable)")
+    ap.add_argument("--extra-apk", action="append", default=[], metavar="PKG",
+                    help="extra Alpine package to install (repeatable)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--mapping", default=str(HERE / "linters.json"))
     args = ap.parse_args()
@@ -80,6 +88,10 @@ def main():
     mapping = json.loads(Path(args.mapping).read_text())
     table = mapping["linters"]
     flags = read_flags(args.env)
+    excluded = [e.removeprefix("VALIDATE_") for e in args.exclude]
+    flags = [f for f in flags if f not in excluded]
+    if not flags:
+        sys.exit("no linters selected")
     unknown = [f for f in flags if f not in table]
     if unknown:
         sys.exit("no mapping for: " + ", ".join(unknown)
@@ -91,7 +103,7 @@ def main():
     venvs = uniq(v for s in sel for v in s.get("venvs", []))
     groups = uniq(g for s in sel for g in s.get("npm", []))
     npm_roots = uniq(p for g in groups for p in mapping["npm_groups"][g])
-    apk = uniq(mapping["base_apk"] + [p for s in sel for p in s.get("apk", [])]
+    apk = uniq(mapping["base_apk"] + [p for s in sel for p in s.get("apk", [])] + args.extra_apk
                + (["nodejs-current"] if npm_roots else []))
     path_extra = uniq([f"/venvs/{v}/bin" for v in venvs] + (["/node_modules/.bin"] if npm_roots else [])
                       + [p for s in sel for p in s.get("path", [])])
