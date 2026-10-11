@@ -56,8 +56,32 @@ users will see.
 
 ## Results
 
-Fill in from the `results` artifact of a benchmark run.
+Run 38144305432, upstream v9.0.0, runner `[self-hosted, pretium]` (Proxmox VM,
+2 CPU, 4 GB RAM, 40 GB disk), median of 3 cold pulls. Baseline is upstream
+`slim-v9.0.0`. Every profile except `ghwm` is the shared base
+(`profiles/common.env`) plus its stack flags. Raw data is on the `bench-results`
+branch under `results/2026-10-11-run-38144305432/`.
 
-| Date | Upstream | Runner | Variant | Pull median | Compressed | Uncompressed |
+| Profile | Baseline pull | Lean gzip | Lean zstd | Unpacked: base to lean | Compressed: base to lean | Build gzip+zstd (incl. push) |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| ghwm | 75.6 s | 10.2 s | 4.6 s | 5789 to 771 MB (-87%) | 1310 to 170 MB (-87%) | 129 s |
+| python | 73.4 s | 12.4 s | 5.7 s | 5789 to 965 MB (-83%) | 1310 to 210 MB (-84%) | 153 s |
+| java | 71.7 s | 13.2 s | 5.3 s | 5789 to 1004 MB (-83%) | 1310 to 233 MB (-82%) | 182 s |
+| c-cpp | 69.2 s | 9.8 s | 3.6 s | 5789 to 726 MB (-87%) | 1310 to 156 MB (-88%) | 124 s |
+| frontend-vanilla | 71.1 s | 9.4 s | 3.4 s | 5789 to 722 MB (-88%) | 1310 to 152 MB (-88%) | 128 s |
+| frontend-react | 71.1 s | 9.7 s | 3.6 s | 5789 to 755 MB (-87%) | 1310 to 156 MB (-88%) | 133 s |
+| frontend-vue | 71.3 s | 9.3 s | 3.6 s | 5789 to 722 MB (-88%) | 1310 to 152 MB (-88%) | 130 s |
+| frontend-angular | 72.7 s | 8.9 s | 3.7 s | 5789 to 722 MB (-88%) | 1310 to 152 MB (-88%) | 135 s |
+| frontend-svelte | 71.9 s | 9.2 s | 4.1 s | 5789 to 722 MB (-88%) | 1310 to 152 MB (-88%) | 139 s |
+| rust | no valid baseline (tag bug, fixed) | 19.4 s | 15 s | 1540 MB lean | 376 MB lean | 232 s |
+| dotnet | build failed (tag bug, then runner out of disk) | | | | | |
+
+Warm runner (image already present): pull is a no-op, about 1.5 s for the
+baseline and 0.9 s for lean; container start 0.4 s vs 0.3 s. A smaller image
+does not make a runner that already holds the full image meaningfully faster.
+
+Baseline drift (first vs last cold pull) stayed within 5% on every profile.
+Build time is gzip and zstd together; later runs record them separately.
+
+Open: dotnet and rust re-run with the corrected standard tag, GitHub-hosted
+runner numbers (blocked by org billing), upgrade-pull scenario.
