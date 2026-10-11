@@ -73,8 +73,8 @@ branch under `results/2026-10-11-run-38144305432/`.
 | frontend-vue | 71.3 s | 9.3 s | 3.6 s | 5789 to 722 MB (-88%) | 1310 to 152 MB (-88%) | 130 s |
 | frontend-angular | 72.7 s | 8.9 s | 3.7 s | 5789 to 722 MB (-88%) | 1310 to 152 MB (-88%) | 135 s |
 | frontend-svelte | 71.9 s | 9.2 s | 4.1 s | 5789 to 722 MB (-88%) | 1310 to 152 MB (-88%) | 139 s |
-| rust | no valid baseline (tag bug, fixed) | 19.4 s | 15 s | 1540 MB lean | 376 MB lean | 232 s |
-| dotnet | build failed (tag bug, then runner out of disk) | | | | | |
+| rust | 96.0 s | 16.9 s | 6.6 s | 7885 to 1540 MB (-80%) | 1798 to 376 MB (-79%) | 177 s |
+| dotnet | 98.6 s | 15.1 s | 7.8 s | 7885 to 1555 MB (-80%) | 1798 to 378 MB (-79%) | 200 s |
 
 Warm runner (image already present): pull is a no-op, about 1.5 s for the
 baseline and 0.9 s for lean; container start 0.4 s vs 0.3 s. A smaller image
@@ -83,5 +83,12 @@ does not make a runner that already holds the full image meaningfully faster.
 Baseline drift (first vs last cold pull) stayed within 5% on every profile.
 Build time is gzip and zstd together; later runs record them separately.
 
-Open: dotnet and rust re-run with the corrected standard tag, GitHub-hosted
+dotnet and rust (run 38152523859, same runner) are compared against the upstream
+`standard` image (`v9.0.0`), which is larger than slim: 7885 MB unpacked, 1798 MB
+compressed. Their baseline drift was 2% and 13%. In that run the build time was
+recorded per variant (gzip 167 s / zstd 32 s for dotnet, 141 s / 36 s for rust).
+The zstd build runs second and reuses the build cache, so its time is not a
+fair cold-build number.
+
+Open: GitHub-hosted
 runner numbers (blocked by org billing), upgrade-pull scenario.
