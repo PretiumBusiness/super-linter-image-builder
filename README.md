@@ -22,8 +22,27 @@ Status: early. The first step is measuring whether this is worth building. See
 
 | Path | Purpose |
 |---|---|
-| `overlay/Dockerfile.ghwm` | Hand-built overlay for the ghwm linter set (spike) |
+| `compiler/generate.py` | Profile (`VALIDATE_*` flags) -> Dockerfile, tool self-checks and plan |
+| `compiler/linters.json` | Flag -> upstream paths, venvs, npm packages, apk packages |
+| `compiler/prune-node-modules.js` | Copies only the dependency closure of the needed npm packages |
+| `profiles/` | Stack profiles: python, java, dotnet, rust, c-cpp, frontend-{vanilla,react,vue,angular,svelte}, ghwm |
+| `sim/` | Pull-time simulation (estimates, runs without a registry) |
+| `overlay/Dockerfile.ghwm` | The first hand-built overlay (kept for reference) |
 | `examples/ghwm.env` | The ghwm Super-Linter environment, used as test input |
 | `scripts/bench-pull.sh` | Cold pull timing |
 | `scripts/summarize.sh` | Results table from benchmark output |
-| `.github/workflows/benchmark.yml` | Builds the overlay and runs the benchmark and smoke test |
+| `.github/workflows/profiles.yml` | Per profile: generate, push to GHCR, verify tools, benchmark cold and warm pulls (self-hosted runner) |
+| `.github/workflows/benchmark.yml` | Earlier GitHub-hosted benchmark for the ghwm overlay |
+
+## Try it locally
+
+```
+python3 compiler/generate.py --env profiles/common.env --env profiles/python.env \
+  --upstream-tag v9.0.0 --upstream-dockerfile <upstream Dockerfile at that tag> --out build/python
+docker buildx build build/python -t lean-python
+docker run --rm -v "$PWD/build/python/checks.sh:/checks.sh:ro" --entrypoint bash lean-python /checks.sh
+```
+
+Profiles marked as needing the upstream `standard` image (dotnet, rust) are
+compared against `standard`, not `slim`. Upstream has no Svelte-specific linter,
+so the Svelte profile covers the JS, TS, CSS and HTML around it.

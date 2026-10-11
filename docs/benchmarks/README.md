@@ -31,7 +31,7 @@ A simulation (`sim/`) predicts scenario 1 before real numbers exist.
 
 ## Method
 
-- Workflow: `.github/workflows/benchmark.yml` (manual dispatch).
+- Workflow: `.github/workflows/profiles.yml` (manual dispatch, self-hosted runner, one job per stack profile). `benchmark.yml` is the earlier GitHub-hosted version for ghwm only.
 - Variants:
   - `slim`: `ghcr.io/super-linter/super-linter:slim-<tag>`
   - `lean-gzip`: `overlay/Dockerfile.ghwm`, default gzip layers
