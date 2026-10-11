@@ -42,7 +42,7 @@ run_check() {
   local out rc
   out="$(eval "$1" 2>&1)"; rc=$?
   if [ "$rc" -ge 126 ] && [ "$rc" -le 127 ] \
-    || printf '%s' "$out" | grep -qiE 'cannot find (module|package)|MODULE_NOT_FOUND|ERR_MODULE_NOT_FOUND|error while loading shared|not found|no such file or directory'; then
+    || printf '%s' "$out" | grep -qiE 'cannot find (module|package)|MODULE_NOT_FOUND|ERR_MODULE_NOT_FOUND|error while loading shared|: not found$|no such file or directory'; then
     echo "FAIL ($rc): $1"; printf '%s\n' "$out" | head -5 | sed 's/^/    /'; fail=1
   else
     echo "ok: $1"

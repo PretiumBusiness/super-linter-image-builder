@@ -99,5 +99,16 @@ recorded per variant (gzip 167 s / zstd 32 s for dotnet, 141 s / 36 s for rust).
 The zstd build runs second and reuses the build cache, so its time is not a
 fair cold-build number.
 
+### Every mapped linter at once
+
+Run 38165304659 built an image with all 95 mapped flags (`all-linters`, based on
+upstream `standard`) to verify the mapping: 80 tool checks ran and all tools
+worked (the one reported failure was a false positive in the checker, fixed).
+The lean image is 7037 MB unpacked and 1679 MB compressed against 7885 MB and
+1798 MB for upstream standard, with a cold pull of 72.4 s (gzip) and 26.5 s
+(zstd). With every linter enabled the size saving is only about 11%, as expected:
+the saving comes from leaving linters out, so the tool pays off for repositories
+that use a subset. The baseline pull of this run did not complete.
+
 Open: GitHub-hosted
 runner numbers (blocked by org billing), upgrade-pull scenario.
