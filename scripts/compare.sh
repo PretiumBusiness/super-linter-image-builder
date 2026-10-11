@@ -16,6 +16,9 @@ jq -s -r '
   def mbs: if . == null then "n/a" else (. | tostring) + " MB" end;
   def pct($a; $b): if $a == null or $b == null or $a == 0 then "n/a"
                    else ((1 - $b / $a) * 100 | round | tostring) + "%" end;
+  def drift($a; $b): if $a == null or $b == null or $a == 0 then "n/a"
+                     else (($b - $a) / $a * 100) as $d
+                          | (if ($d | fabs) > 15 then "WARN " else "" end) + ($d | round | tostring) + "%" end;
   def x($a; $b): if $a == null or $b == null or $b == 0 then "n/a"
                  else (($a / $b) * 10 | round / 10 | tostring) + "x" end;
 
@@ -25,13 +28,13 @@ jq -s -r '
   | group_by(.profile) as $profiles
   | ( "### Cold pull (image removed before each pull)",
       "",
-      "| Profile | Baseline | Lean gzip | Lean zstd | Speedup (gzip) | Speedup (zstd) | Baseline unpacked | Lean unpacked | Unpacked saved | Baseline compressed | Lean compressed | Compressed saved |",
-      "|---|---|---|---|---|---|---|---|---|---|---|---|",
+      "| Profile | Baseline | Lean gzip | Lean zstd | Speedup (gzip) | Speedup (zstd) | Baseline unpacked | Lean unpacked | Unpacked saved | Baseline compressed | Lean compressed | Compressed saved | Baseline drift |",
+      "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
       ( $profiles[] | . as $rows | $rows[0].profile as $p
         | def sel($k; $m): $rows | map(select(.kind == $k and .mode == $m));
           def med($k; $m): [sel($k; $m)[].pull_s] | median;
           def sz($k; $f): (sel($k; "cold")[0] // {}) | .[$f] | mb;
-        "| \($p) | \(med("baseline"; "cold") | s) | \(med("lean-gzip"; "cold") | s) | \(med("lean-zstd"; "cold") | s) | \(x(med("baseline"; "cold"); med("lean-gzip"; "cold"))) | \(x(med("baseline"; "cold"); med("lean-zstd"; "cold"))) | \(sz("baseline"; "uncompressed_bytes") | mbs) | \(sz("lean-gzip"; "uncompressed_bytes") | mbs) | \(pct(sz("baseline"; "uncompressed_bytes"); sz("lean-gzip"; "uncompressed_bytes"))) | \(sz("baseline"; "compressed_bytes") | mbs) | \(sz("lean-gzip"; "compressed_bytes") | mbs) | \(pct(sz("baseline"; "compressed_bytes"); sz("lean-gzip"; "compressed_bytes"))) |" ),
+        "| \($p) | \(med("baseline"; "cold") | s) | \(med("lean-gzip"; "cold") | s) | \(med("lean-zstd"; "cold") | s) | \(x(med("baseline"; "cold"); med("lean-gzip"; "cold"))) | \(x(med("baseline"; "cold"); med("lean-zstd"; "cold"))) | \(sz("baseline"; "uncompressed_bytes") | mbs) | \(sz("lean-gzip"; "uncompressed_bytes") | mbs) | \(pct(sz("baseline"; "uncompressed_bytes"); sz("lean-gzip"; "uncompressed_bytes"))) | \(sz("baseline"; "compressed_bytes") | mbs) | \(sz("lean-gzip"; "compressed_bytes") | mbs) | \(pct(sz("baseline"; "compressed_bytes"); sz("lean-gzip"; "compressed_bytes"))) | \(drift(med("baseline"; "cold"); med("baseline-end"; "cold"))) |" ),
       "",
       "### Warm pull (image already on the runner) and container start",
       "",

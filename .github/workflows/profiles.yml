@@ -23,6 +23,10 @@ on:
         description: Pulls per image and mode
         default: "3"
         required: true
+      split_download:
+        description: Also measure the download vs unpack split (about 3x slower)
+        type: boolean
+        default: false
       runner_labels:
         description: JSON array of runner labels
         default: '["self-hosted", "pretium"]'
@@ -71,6 +75,7 @@ jobs:
       ENVS: ${{ matrix.envs }}
       TAG: ${{ inputs.upstream_tag }}
       RUNS: ${{ inputs.runs }}
+      BENCH_SPLIT: ${{ inputs.split_download && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -148,6 +153,9 @@ jobs:
             measure "${LEAN_BASE}:${TAG}-gzip" lean-gzip "$mode"
             measure "${LEAN_BASE}:${TAG}-zstd" lean-zstd "$mode"
           done
+          # Bracket: pull the baseline cold again at the end. If it differs a
+          # lot from the first reading, the network drifted during this job.
+          RUNS=2 measure "$BASELINE_IMAGE" baseline-end cold
 
       - uses: actions/upload-artifact@v4
         if: always()

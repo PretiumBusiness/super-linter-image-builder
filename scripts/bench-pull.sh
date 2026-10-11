@@ -10,13 +10,16 @@
 #           preloaded); time the no-op `docker pull`, which is what a job pays
 #           when nothing needs downloading
 #   BENCH_OUT   JSON lines output file (default: bench-results.jsonl)
+#   BENCH_SPLIT 1 to also measure a download-only pull and a `docker load` in
+#               cold mode (needs crane; roughly triples the time per run)
 #
 # Appends one JSON object per run to $BENCH_OUT.
 #
-# In cold mode, if `crane` is on PATH it also times a download-only pull to a
+# With BENCH_SPLIT=1 in cold mode it also times a download-only pull to a
 # tarball and a `docker load` of that tarball, to give a rough download vs
 # unpack split (approximate: load is not identical to the unpack done by
-# `docker pull`).
+# `docker pull`). Without it, crane (if present) is only used to read the
+# compressed image size.
 set -euo pipefail
 
 image="${1:?image}"
@@ -64,7 +67,7 @@ for i in $(seq 1 "$runs"); do
 
   uncompressed_bytes="$(docker image inspect --format '{{.Size}}' "$image")"
 
-  if [ "$mode" = "cold" ] && [ "$have_crane" = true ]; then
+  if [ "$mode" = "cold" ] && [ "$have_crane" = true ] && [ "${BENCH_SPLIT:-0}" = "1" ]; then
     docker image rm -f "$image" >/dev/null 2>&1 || true
     tarball="$(mktemp --suffix=.tar)"
     t2="$(now)"
