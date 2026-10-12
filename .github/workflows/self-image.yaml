@@ -5,15 +5,17 @@ name: Publish Super-Linter image
 # .github/super-linter.env with superlint-lean and pushes it to GHCR. The
 # super-linter workflow can run it through SUPER_LINTER_IMAGE.
 #
-#   ghcr.io/<owner>/<repo>/lint:<upstream tag>              moves with each rebuild
+#   ghcr.io/<owner>/<repo>/lint:latest                      moves with each rebuild
+#   ghcr.io/<owner>/<repo>/lint:<upstream tag>              moves with each rebuild of that version
 #   ghcr.io/<owner>/<repo>/lint:<upstream tag>-<short sha>  immutable
 #
 # Optionally it points the SUPER_LINTER_IMAGE repository variable (read by the
 # super-linter workflow) at the immutable tag it just pushed. Writing a
 # repository variable needs more than the workflow token, so this only happens
 # when the VARIABLES_TOKEN secret exists (a token allowed to write Actions
-# variables). Without it, set the variable once to the moving tag
-# (ghcr.io/<owner>/<repo>/lint:<upstream tag>) and every rebuild is picked up.
+# variables). Without it, set the variable once to the stable tag
+# (ghcr.io/<owner>/<repo>/lint:latest) and every rebuild, including a new
+# upstream version, is picked up.
 #
 # It runs when the linter flags, the upstream pin or the generator change on
 # main, or by hand. It never runs on a schedule: a new upstream release arrives
@@ -97,7 +99,7 @@ jobs:
             --build-arg "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${REPOSITORY}" \
             --label "io.superlint-lean.upstream-tag=${TAG}" \
-            --tag "${image}:${TAG}" --tag "${image}:${TAG}-${SHA::7}" \
+            --tag "${image}:latest" --tag "${image}:${TAG}" --tag "${image}:${TAG}-${SHA::7}" \
             --push
           echo "Pushed \`${image}:${TAG}-${SHA::7}\`" >> "${GITHUB_STEP_SUMMARY}"
           echo "image=${image}:${TAG}-${SHA::7}" >> "${GITHUB_OUTPUT}"
