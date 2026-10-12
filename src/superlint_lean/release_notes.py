@@ -1,9 +1,9 @@
 """Release notes comparing the benchmark results of two upstream versions.
 
 Usage:
-  superlint-lean release-notes --old-tag v9.0.0 --old-dir results/by-tag/v9.0.0 \\
-      --new-tag v9.1.0 --new-dir results/by-tag/v9.1.0 [--profiles ghwm,python] \\
-      [--mapping-diff mapping.diff] [--out notes.md]
+    superlint-lean release-notes --old-tag v9.0.0 --old-dir results/by-tag/v9.0.0 \\
+        --new-tag v9.1.0 --new-dir results/by-tag/v9.1.0 [--profiles ghwm,python] \\
+        [--mapping-diff mapping.diff] [--out notes.md]
 
 Each directory holds the bench-<profile>.jsonl files written by
 scripts/bench-pull.sh (and optionally build-<profile>.jsonl). For every profile

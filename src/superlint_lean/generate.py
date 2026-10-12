@@ -1,15 +1,15 @@
 """Generate a lean Super-Linter image build context from VALIDATE_* flags.
 
 Usage:
-  superlint-lean generate --env base/opinionated.env --env toolchains/python.env \\
-      --upstream-tag v9.0.0 --upstream-dockerfile path/to/upstream/Dockerfile \\
-      --out build/python
+    superlint-lean generate --env base/opinionated.env --env toolchains/python.env \\
+        --upstream-tag v9.0.0 --upstream-dockerfile path/to/upstream/Dockerfile \\
+        --out build/python
 
 Writes into --out:
-  Dockerfile               overlay image, pinned to the upstream release
-  prune-node-modules.js    helper used by the Dockerfile
-  checks.sh                runs inside the built image to verify every tool
-  plan.json                what was selected (also names the baseline variant)
+    Dockerfile               overlay image, pinned to the upstream release
+    prune-node-modules.js    helper used by the Dockerfile
+    checks.sh                runs inside the built image to verify every tool
+    plan.json                what was selected (also names the baseline variant)
 
 Everything is configurable. The base and the toolchains are only env files, so
 any combination works: leave the base out, add several toolchains, drop single
@@ -45,14 +45,14 @@ cd /
 """
 CHECK_FUNC = r"""fail=0
 run_check() {
-  local out rc
-  out="$(eval "$1" 2>&1)"; rc=$?
-  if [ "$rc" -ge 126 ] && [ "$rc" -le 127 ] \
-    || printf '%s' "$out" | grep -qiE 'cannot find (module|package)|MODULE_NOT_FOUND|ERR_MODULE_NOT_FOUND|error while loading shared|: not found$|no such file or directory'; then
-    echo "FAIL ($rc): $1"; printf '%s\n' "$out" | head -5 | sed 's/^/    /'; fail=1
-  else
-    echo "ok: $1"
-  fi
+    local out rc
+    out="$(eval "$1" 2>&1)"; rc=$?
+    if [ "$rc" -ge 126 ] && [ "$rc" -le 127 ] \
+        || printf '%s' "$out" | grep -qiE 'cannot find (module|package)|MODULE_NOT_FOUND|ERR_MODULE_NOT_FOUND|error while loading shared|: not found$|no such file or directory'; then
+        echo "FAIL ($rc): $1"; printf '%s\n' "$out" | head -5 | sed 's/^/    /'; fail=1
+    else
+        echo "ok: $1"
+    fi
 }
 """
 

@@ -2,14 +2,14 @@
 draft entries for linters the mapping does not know yet.
 
 Usage:
-  superlint-lean sync-mapping --upstream path/to/super-linter [--write] [--report report.md]
+    superlint-lean sync-mapping --upstream path/to/super-linter [--write] [--report report.md]
 
 Reads from the upstream checkout:
-  lib/globals/languages.sh        every VALIDATE_* flag (LANGUAGE_ARRAY)
-  lib/functions/linterCommands.sh the command each flag runs
-  Dockerfile                      where each binary is copied from
-  dependencies/python/*.txt       one virtualenv per file
-  dependencies/package.json       npm packages
+    lib/globals/languages.sh        every VALIDATE_* flag (LANGUAGE_ARRAY)
+    lib/functions/linterCommands.sh the command each flag runs
+    Dockerfile                      where each binary is copied from
+    dependencies/python/*.txt       one virtualenv per file
+    dependencies/package.json       npm packages
 
 For each flag missing from the mapping it derives a draft entry (marked
 "draft": true) by locating the command in the Dockerfile, the virtualenvs or the
