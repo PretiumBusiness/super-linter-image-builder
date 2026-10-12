@@ -9,6 +9,9 @@ name: Upstream sync
 #   detect    scheduled and manual runs: one GitHub API call that compares the
 #             pinned version with the latest upstream release. Nothing else runs
 #             when the pin is current.
+#             A release must be at least UPSTREAM_COOLDOWN_DAYS old (repository
+#             variable, default 0, like uv's exclude-newer): the newest release
+#             that old is the target, and a younger one waits for a later run.
 #   sync      only when upstream is ahead: add the linters that are missing from
 #             the mapping (draft entries), build one image containing every
 #             mapped linter to check them, bump the pin and open a pull request.
@@ -30,6 +33,10 @@ on:
     inputs:
       force_tag:
         description: Sync to this upstream tag even if it is not the latest (optional)
+        required: false
+        default: ""
+      cooldown_days:
+        description: Only consider releases at least this many days old (default - the UPSTREAM_COOLDOWN_DAYS repository variable, else 0)
         required: false
         default: ""
       runner_labels:
@@ -114,11 +121,20 @@ jobs:
       - id: v
         env:
           FORCE_TAG: ${{ inputs.force_tag }}
+          COOLDOWN_DAYS: ${{ inputs.cooldown_days || vars.UPSTREAM_COOLDOWN_DAYS || '0' }}
         run: |
           pinned="$(tr -d '[:space:]' < upstream-version.txt)"
           latest="$FORCE_TAG"
-          if [ -z "$latest" ]; then
+          if [ -z "$latest" ] && [ "$COOLDOWN_DAYS" = "0" ]; then
             latest="$(gh api repos/super-linter/super-linter/releases/latest --jq .tag_name)"
+          elif [ -z "$latest" ]; then
+            case "$COOLDOWN_DAYS" in *[!0-9]*) echo "::error::cooldown_days must be a whole number, got '$COOLDOWN_DAYS'"; exit 1 ;; esac
+            # The newest published release (no draft, no prerelease) that is old enough.
+            latest="$(gh api "repos/super-linter/super-linter/releases?per_page=50" --jq \
+              "[.[] | select(.draft == false and .prerelease == false)
+                    | select((.published_at | fromdateiso8601) <= (now - ${COOLDOWN_DAYS} * 86400))][0].tag_name // empty")"
+            echo "Cooldown ${COOLDOWN_DAYS} days: newest eligible upstream release is '${latest:-none}'." | tee -a "$GITHUB_STEP_SUMMARY"
+            latest="${latest:-$pinned}"
           fi
           newest="$(printf '%s\n%s\n' "$pinned" "$latest" | sort -V | tail -1)"
           if [ "$latest" != "$pinned" ] && [ "$newest" = "$latest" ]; then
