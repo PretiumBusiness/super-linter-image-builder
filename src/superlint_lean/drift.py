@@ -44,7 +44,7 @@ def file_flags(path, table, root=None):
         if "shebang" in rule and ext == "" and root is not None:
             if first_line is None:
                 try:
-                    with open(os.path.join(root, path), "r", errors="ignore") as fh:
+                    with open(os.path.join(root, path), errors="ignore") as fh:
                         first_line = fh.readline()
                 except OSError:
                     first_line = ""
@@ -76,7 +76,7 @@ def changed_files(base, root):
                              capture_output=True, text=True)
     if out.returncode != 0:
         raise slconfig.ConfigError(f"git diff against {base} failed: {out.stderr.strip()}")
-    return [l for l in out.stdout.splitlines() if l]
+    return [line for line in out.stdout.splitlines() if line]
 
 
 def check(env, files, upstream_flags, table, root=None, allow_ext=()):
@@ -118,7 +118,7 @@ def main(argv=None):
         if not env:
             raise slconfig.ConfigError("give --workflow or --env")
         if args.files_from:
-            files = [l.strip() for l in Path(args.files_from).read_text().splitlines() if l.strip()]
+            files = [line.strip() for line in Path(args.files_from).read_text().splitlines() if line.strip()]
         elif args.base:
             files = changed_files(args.base, args.root)
         else:

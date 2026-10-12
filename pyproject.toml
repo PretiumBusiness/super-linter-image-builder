@@ -68,6 +68,8 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "B", "UP", "RUF", "N"]
+# long lines are mostly embedded shell and Dockerfile text
+ignore = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

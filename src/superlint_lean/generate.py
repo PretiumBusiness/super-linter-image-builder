@@ -27,6 +27,8 @@ import shlex
 import sys
 from pathlib import Path
 
+from superlint_lean import config as slconfig
+
 HERE = Path(__file__).resolve().parent / "data"
 UPSTREAM_REPO = "ghcr.io/super-linter/super-linter"
 FIXTURES = r"""mkdir -p /tmp/fx && cd /tmp/fx
@@ -120,7 +122,6 @@ def main(argv=None):
         sys.exit("give at least one --env file or --workflow, or --all")
     flags = read_flags(args.env)
     if args.workflow:
-        pass
         wenv = {}
         try:
             for w in args.workflow:
