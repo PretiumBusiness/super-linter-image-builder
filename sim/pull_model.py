@@ -57,16 +57,16 @@ def download_done_times(comp_mb, bandwidth, per_conn):
 
 def pull_time(layers, env, zstd=False):
     """layers: list of dicts with comp_mb, unc_mb, files. Returns (total_s, extract_s)."""
-    comp = [l["comp_mb"] * (env["zstd_ratio"] if zstd else 1.0) for l in layers]
+    comp = [layer["comp_mb"] * (env["zstd_ratio"] if zstd else 1.0) for layer in layers]
     done = download_done_times(comp, env["bandwidth"], env["per_conn"])
     decomp = env["decomp_gz"] * (env["zstd_speedup"] if zstd else 1.0)
     end = 0.0
     ext_total = 0.0
-    for l, d in zip(layers, done):
+    for layer, d in zip(layers, done, strict=True):
         ext = (
-            l["unc_mb"] / decomp
-            + l["unc_mb"] / env["disk_write"]
-            + l["files"] * env["per_file_us"] * 1e-6
+            layer["unc_mb"] / decomp
+            + layer["unc_mb"] / env["disk_write"]
+            + layer["files"] * env["per_file_us"] * 1e-6
             + PER_LAYER_S
         )
         ext_total += ext
@@ -122,7 +122,7 @@ def build_layers(variant, components, drawn):
     merged = {k: sum(v[k] for v in venvs) for k in ("unc_mb", "files", "comp_mb")}
     merged.update(id="venvs", kind="venv")
     # place the merged venv layer where upstream does: after the binaries
-    return rest + [merged]
+    return [*rest, merged]
 
 
 def pct(values, q):
@@ -134,7 +134,7 @@ def run_simulation(args):
     spec = json.loads(Path(args.components).read_text())
     components = spec["components"]
     variant_names = list(spec["variants"])
-    rng = random.Random(args.seed)
+    rng = random.Random(args.seed)  # noqa: S311 - a simulation, not cryptography
     lo, hi = args.observed
     acc = {v: [] for v in variant_names}
     sizes = {v: [] for v in variant_names}
@@ -157,9 +157,9 @@ def run_simulation(args):
             ext_share[v].append(ext / t)
             sizes[v].append(
                 (
-                    sum(l["comp_mb"] for l in layers) / 1024,
-                    sum(l["unc_mb"] for l in layers) / 1024,
-                    sum(l["files"] for l in layers),
+                    sum(layer["comp_mb"] for layer in layers) / 1024,
+                    sum(layer["unc_mb"] for layer in layers) / 1024,
+                    sum(layer["files"] for layer in layers),
                 )
             )
     if accepted < 50:
@@ -175,13 +175,13 @@ def run_measured(args):
         layer_sets[name] = json.loads(Path(path).read_text())
     if "slim" not in layer_sets:
         sys.exit("--measured needs a slim=... entry for calibration")
-    rng = random.Random(args.seed)
+    rng = random.Random(args.seed)  # noqa: S311 - a simulation, not cryptography
     lo, hi = args.observed
     acc = {v: [] for v in layer_sets}
     accepted = 0
     for _ in range(args.draws):
         env = draw_env(rng)
-        t = {v: pull_time(l, env, zstd=v.endswith("_zstd"))[0] for v, l in layer_sets.items()}
+        t = {v: pull_time(layers, env, zstd=v.endswith("_zstd"))[0] for v, layers in layer_sets.items()}
         if lo <= t["slim"] <= hi:
             accepted += 1
             for v in layer_sets:
