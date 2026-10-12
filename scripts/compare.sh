@@ -15,16 +15,16 @@ jq -s -r '
   def mb: if . == null then null else (. / 1048576 | round) end;
   def mbs: if . == null then "n/a" else (. | tostring) + " MB" end;
   def pct($a; $b): if $a == null or $b == null or $a == 0 then "n/a"
-                   else ((1 - $b / $a) * 100 | round | tostring) + "%" end;
+                  else ((1 - $b / $a) * 100 | round | tostring) + "%" end;
   def drift($a; $b): if $a == null or $b == null or $a == 0 then "n/a"
-                     else (($b - $a) / $a * 100) as $d
+                    else (($b - $a) / $a * 100) as $d
                           | (if ($d | fabs) > 15 then "WARN " else "" end) + ($d | round | tostring) + "%" end;
   def x($a; $b): if $a == null or $b == null or $b == 0 then "n/a"
-                 else (($a / $b) * 10 | round / 10 | tostring) + "x" end;
+                else (($a / $b) * 10 | round / 10 | tostring) + "x" end;
 
   flatten
   | map(. + {profile: (.variant | split("/")[0]), kind: (.variant | split("/")[1]),
-             mode: (.mode // "cold")})
+            mode: (.mode // "cold")})
   | group_by(.profile) as $profiles
   | ( "### Cold pull (image removed before each pull)",
       "",

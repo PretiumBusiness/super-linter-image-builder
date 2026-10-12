@@ -1,0 +1,2 @@
+# Use the project's Ruff configuration (pyproject.toml) so Super-Linter and `make lint` agree.
+extend = "../../pyproject.toml"

@@ -13,6 +13,7 @@ paths:
     # List of regular expressions to filter errors by the error messages.
     ignore:
       # Ignore the specific error from shellcheck
+      - 'shellcheck reported issue in this script: SC2016:.+'
       - 'shellcheck reported issue in this script: SC2129:.+'
       # Ignore expression errors in auto-generated gh-aw lock files referencing
       # jobs that actionlint cannot statically resolve (e.g. pre_activation).
