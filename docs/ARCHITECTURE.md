@@ -70,6 +70,7 @@ flowchart LR
 | `upstream-sync.yaml` | Detects a newer upstream release; only then syncs the mapping and opens a bump pull request. |
 | `release.yaml` | On a bump of the pin: benchmarks old and new versions and publishes a release. |
 | `profiles.yaml` | Reusable benchmark per stack profile. |
+| `self-image.yaml` | Builds this repository's own lean Super-Linter image from `.github/super-linter.env` and pushes it to GHCR (`ghcr.io/<owner>/<repo>/lint`). |
 | `drift-blocker.yml` | Reusable workflow other repositories call to run `drift`. |
 
 ## Managed workflows
