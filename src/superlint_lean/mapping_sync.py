@@ -2,14 +2,14 @@
 draft entries for linters the mapping does not know yet.
 
 Usage:
-  superlint-lean sync-mapping --upstream path/to/super-linter [--write] [--report report.md]
+    superlint-lean sync-mapping --upstream path/to/super-linter [--write] [--report report.md]
 
 Reads from the upstream checkout:
-  lib/globals/languages.sh        every VALIDATE_* flag (LANGUAGE_ARRAY)
-  lib/functions/linterCommands.sh the command each flag runs
-  Dockerfile                      where each binary is copied from
-  dependencies/python/*.txt       one virtualenv per file
-  dependencies/package.json       npm packages
+    lib/globals/languages.sh        every VALIDATE_* flag (LANGUAGE_ARRAY)
+    lib/functions/linterCommands.sh the command each flag runs
+    Dockerfile                      where each binary is copied from
+    dependencies/python/*.txt       one virtualenv per file
+    dependencies/package.json       npm packages
 
 For each flag missing from the mapping it derives a draft entry (marked
 "draft": true) by locating the command in the Dockerfile, the virtualenvs or the
@@ -20,16 +20,19 @@ tool checks when the image is built (see the upstream-sync workflow).
 Exit code: 0 when nothing is missing, 10 when drafts were added or unresolved
 flags remain, so a workflow can tell the mapping needs attention.
 """
+
 import argparse
 import json
 import re
 import sys
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from pathlib import Path
+from typing import Any
 
 HERE = Path(__file__).resolve().parent / "data"
 
 
-def upstream_flags(root):
+def upstream_flags(root: Path) -> list[str]:
     text = (root / "lib/globals/languages.sh").read_text()
     m = re.search(r"LANGUAGE_ARRAY=\((.*?)\n\)", text, re.S)
     if not m:
@@ -38,7 +41,7 @@ def upstream_flags(root):
     return re.findall(r"['\"]?([A-Z][A-Z0-9_]*)['\"]?", body)
 
 
-def upstream_commands(root):
+def upstream_commands(root: Path) -> dict[str, str | None]:
     """flag -> first word of its command, or None if it is built from a variable."""
     text = (root / "lib/functions/linterCommands.sh").read_text()
     out = {}
@@ -48,7 +51,7 @@ def upstream_commands(root):
     return out
 
 
-def dockerfile_binaries(root):
+def dockerfile_binaries(root: Path) -> dict[str, str]:
     """basename -> destination path for every COPY --from=<stage> in the Dockerfile."""
     text = (root / "Dockerfile").read_text().replace("\\\n", " ")
     out: dict[str, str] = {}
@@ -60,12 +63,19 @@ def dockerfile_binaries(root):
     return out
 
 
-def npm_packages(root):
+def npm_packages(root: Path) -> list[str]:
     pkg = json.loads((root / "dependencies/package.json").read_text())
     return sorted({**pkg.get("dependencies", {}), **pkg.get("devDependencies", {})})
 
 
-def derive(flag, cmd, root, bins, venv_names, npm_pkgs):
+def derive(
+    flag: str,
+    cmd: str | None,
+    root: Path,
+    bins: Mapping[str, str],
+    venv_names: Collection[str],
+    npm_pkgs: Iterable[str],
+) -> dict[str, Any] | None:
     """Return a draft mapping entry for `cmd`, or None."""
     if cmd is None:
         return None
@@ -82,7 +92,7 @@ def derive(flag, cmd, root, bins, venv_names, npm_pkgs):
     return None
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--upstream", required=True, help="upstream Super-Linter checkout")
     ap.add_argument("--mapping", default=str(HERE / "linters.json"))
@@ -123,11 +133,16 @@ def main(argv=None):
         mapping["linters"] = dict(sorted(table.items()))
         path.write_text(json.dumps(mapping, indent=2) + "\n")
 
-    lines = ["### Mapping sync", "",
-             f"- upstream flags: {len(flags)}", f"- mapped flags: {len(table)}",
-             f"- new flags with a draft entry: {len(drafts)}",
-             f"- new flags needing a manual mapping: {len(unresolved)}",
-             f"- mapped flags no longer in upstream: {len(removed)}", ""]
+    lines = [
+        "### Mapping sync",
+        "",
+        f"- upstream flags: {len(flags)}",
+        f"- mapped flags: {len(table)}",
+        f"- new flags with a draft entry: {len(drafts)}",
+        f"- new flags needing a manual mapping: {len(unresolved)}",
+        f"- mapped flags no longer in upstream: {len(removed)}",
+        "",
+    ]
     if drafts:
         lines += ["**Drafts (verified only by the tool checks, review before merging):**", ""]
         lines += [f"- `{f}`: `{json.dumps(d)}`" for f, d in drafts.items()] + [""]

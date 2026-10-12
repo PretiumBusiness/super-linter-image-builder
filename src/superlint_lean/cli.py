@@ -19,7 +19,11 @@ def usage() -> str:
     width = max(len(name) for name in COMMANDS)
     lines = ["usage: superlint-lean <command> [options]", "", "commands:"]
     lines += [f"  {name:<{width}}  {help_text}" for name, (_, help_text) in COMMANDS.items()]
-    lines += ["", "Run 'superlint-lean <command> --help' for the options of a command.", "  --version  show the version"]
+    lines += [
+        "",
+        "Run 'superlint-lean <command> --help' for the options of a command.",
+        "  --version  show the version",
+    ]
     return "\n".join(lines)
 
 

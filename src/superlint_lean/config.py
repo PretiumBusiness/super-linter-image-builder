@@ -4,12 +4,14 @@ Sources: env files (VALIDATE_*=true lines) and GitHub Actions workflows (the
 `env:` of the workflow, the job and the Super-Linter step).
 
 Semantics follow upstream lib/functions/validation.sh:
-  - no VALIDATE_<LANGUAGE> variable set: every linter is enabled
-  - any set to true and none to false: only those are enabled
-  - any set to false and none to true: every linter except those is enabled
-  - mixing true and false is an error
+    - no VALIDATE_<LANGUAGE> variable set: every linter is enabled
+    - any set to true and none to false: only those are enabled
+    - any set to false and none to true: every linter except those is enabled
+    - mixing true and false is an error
 """
+
 import re
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 
 NON_LINTER = {"ALL_CODEBASE"}
@@ -20,7 +22,7 @@ class ConfigError(Exception):
     pass
 
 
-def parse_env_text(text):
+def parse_env_text(text: str) -> dict[str, str]:
     out = {}
     for line in text.splitlines():
         m = re.match(r"\s*([A-Z][A-Z0-9_]*)\s*=\s*(.*?)\s*$", line)
@@ -29,14 +31,14 @@ def parse_env_text(text):
     return out
 
 
-def parse_env_files(paths):
+def parse_env_files(paths: Iterable[str | Path]) -> dict[str, str]:
     out = {}
     for p in paths:
         out.update(parse_env_text(Path(p).read_text()))
     return out
 
 
-def parse_workflow(path):
+def parse_workflow(path: str | Path) -> dict[str, str]:
     """Merge the env of every Super-Linter step found in a workflow."""
     import yaml  # PyYAML is on GitHub-hosted runners
 
@@ -57,7 +59,7 @@ def parse_workflow(path):
     return out
 
 
-def effective_flags(env, all_flags):
+def effective_flags(env: Mapping[str, str], all_flags: Iterable[str]) -> list[str]:
     """Flags that run, given the environment and the full list of upstream flags."""
     set_true: set[str] = set()
     set_false: set[str] = set()
