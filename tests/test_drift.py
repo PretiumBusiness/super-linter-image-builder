@@ -1,14 +1,13 @@
 import json
-import os
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
+from superlint_lean import config as slconfig
+from superlint_lean import drift as drift_check
+
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "src/superlint_lean/data"
-from superlint_lean import drift as drift_check
-from superlint_lean import config as slconfig
 
 UPSTREAM = set(json.loads((DATA / "linters.json").read_text())["linters"])
 TABLE = json.loads((DATA / "filetypes.json").read_text())
