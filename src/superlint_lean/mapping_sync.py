@@ -24,12 +24,14 @@ import argparse
 import json
 import re
 import sys
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from pathlib import Path
+from typing import Any
 
 HERE = Path(__file__).resolve().parent / "data"
 
 
-def upstream_flags(root):
+def upstream_flags(root: Path) -> list[str]:
     text = (root / "lib/globals/languages.sh").read_text()
     m = re.search(r"LANGUAGE_ARRAY=\((.*?)\n\)", text, re.S)
     if not m:
@@ -38,7 +40,7 @@ def upstream_flags(root):
     return re.findall(r"['\"]?([A-Z][A-Z0-9_]*)['\"]?", body)
 
 
-def upstream_commands(root):
+def upstream_commands(root: Path) -> dict[str, str | None]:
     """flag -> first word of its command, or None if it is built from a variable."""
     text = (root / "lib/functions/linterCommands.sh").read_text()
     out = {}
@@ -48,7 +50,7 @@ def upstream_commands(root):
     return out
 
 
-def dockerfile_binaries(root):
+def dockerfile_binaries(root: Path) -> dict[str, str]:
     """basename -> destination path for every COPY --from=<stage> in the Dockerfile."""
     text = (root / "Dockerfile").read_text().replace("\\\n", " ")
     out: dict[str, str] = {}
@@ -60,12 +62,19 @@ def dockerfile_binaries(root):
     return out
 
 
-def npm_packages(root):
+def npm_packages(root: Path) -> list[str]:
     pkg = json.loads((root / "dependencies/package.json").read_text())
     return sorted({**pkg.get("dependencies", {}), **pkg.get("devDependencies", {})})
 
 
-def derive(flag, cmd, root, bins, venv_names, npm_pkgs):
+def derive(
+    flag: str,
+    cmd: str | None,
+    root: Path,
+    bins: Mapping[str, str],
+    venv_names: Collection[str],
+    npm_pkgs: Iterable[str],
+) -> dict[str, Any] | None:
     """Return a draft mapping entry for `cmd`, or None."""
     if cmd is None:
         return None
@@ -82,7 +91,7 @@ def derive(flag, cmd, root, bins, venv_names, npm_pkgs):
     return None
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--upstream", required=True, help="upstream Super-Linter checkout")
     ap.add_argument("--mapping", default=str(HERE / "linters.json"))

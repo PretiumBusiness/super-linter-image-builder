@@ -20,14 +20,16 @@ import os
 import re
 import subprocess
 import sys
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from pathlib import Path
+from typing import Any
 
 from superlint_lean import config as slconfig
 
 HERE = Path(__file__).resolve().parent / "data"
 
 
-def file_flags(path, table, root=None):
+def file_flags(path: str, table: dict[str, Any], root: str | None = None) -> list[str]:
     """Flags upstream would run on `path` (file-type specific ones only)."""
     p = path.replace("\\", "/")
     base = p.rsplit("/", 1)[-1].lower()
@@ -57,7 +59,7 @@ def file_flags(path, table, root=None):
     return flags
 
 
-def selected(path, env):
+def selected(path: str, env: Mapping[str, str]) -> bool:
     inc, exc = env.get("FILTER_REGEX_INCLUDE"), env.get("FILTER_REGEX_EXCLUDE")
     target = "/" + path
     if inc and not re.search(inc, target):
@@ -67,7 +69,7 @@ def selected(path, env):
     return True
 
 
-def changed_files(base, root):
+def changed_files(base: str, root: str) -> list[str]:
     out = subprocess.run(["git", "-C", root, "diff", "--name-only", "--diff-filter=ACMR", f"{base}...HEAD"],
                          capture_output=True, text=True)
     if out.returncode != 0:
@@ -79,7 +81,14 @@ def changed_files(base, root):
     return [line for line in out.stdout.splitlines() if line]
 
 
-def check(env, files, upstream_flags, table, root=None, allow_ext=()):
+def check(
+    env: Mapping[str, str],
+    files: Iterable[str],
+    upstream_flags: Collection[str],
+    table: dict[str, Any],
+    root: str | None = None,
+    allow_ext: Collection[str] = (),
+) -> list[dict[str, Any]]:
     enabled = set(slconfig.effective_flags(env, upstream_flags))
     findings = []
     for f in files:
@@ -95,7 +104,7 @@ def check(env, files, upstream_flags, table, root=None, allow_ext=()):
     return findings
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--workflow", action="append", default=[], help="workflow with a super-linter step (repeatable)")
     ap.add_argument("--env", action="append", default=[], help="env file with VALIDATE_* lines (repeatable)")

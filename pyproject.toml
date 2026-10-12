@@ -73,5 +73,4 @@ ignore = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"
-check_untyped_defs = true
-warn_unused_ignores = true
+strict = true

@@ -25,6 +25,7 @@ import json
 import re
 import shlex
 import sys
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 
 from superlint_lean import config as slconfig
@@ -55,7 +56,7 @@ run_check() {
 """
 
 
-def read_flags(paths):
+def read_flags(paths: Iterable[str | Path]) -> list[str]:
     flags = []
     for p in paths:
         for line in Path(p).read_text().splitlines():
@@ -65,7 +66,7 @@ def read_flags(paths):
     return flags
 
 
-def read_extras(paths):
+def read_extras(paths: Iterable[str | Path]) -> dict[str, list[str]]:
     """EXTRA_APK, EXTRA_NPM, EXTRA_PIP (space separated) and EXTRA_CHECK (one
     command per line, repeatable) from env files."""
     out: dict[str, list[str]] = {"APK": [], "NPM": [], "PIP": [], "CHECK": []}
@@ -81,18 +82,18 @@ def read_extras(paths):
     return out
 
 
-def python_base(dockerfile):
+def python_base(dockerfile: str | Path) -> str:
     m = re.search(r"^FROM\s+(python:\S+)\s+AS\s+python-base", Path(dockerfile).read_text(), re.M)
     if not m:
         sys.exit("could not find 'FROM python:... AS python-base' in the upstream Dockerfile")
     return m.group(1)
 
 
-def uniq(seq):
+def uniq[T](seq: Iterable[T]) -> list[T]:
     return list(dict.fromkeys(seq))
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--env", action="append", default=[], help="env file with VALIDATE_*=true lines (repeatable)")
     ap.add_argument("--upstream-tag", required=True, help="e.g. v9.0.0")
@@ -165,7 +166,8 @@ def main(argv=None):
     baseline = "standard" if any(s.get("baseline") == "standard" or s.get("upstream") == "standard"
                                  for s in sel) else "slim"
     base = python_base(args.upstream_dockerfile)
-    def image_tag(variant):
+
+    def image_tag(variant: str) -> str:
         # slim images are tagged slim-<tag>; standard images are just <tag>
         return f"slim-{args.upstream_tag}" if variant == "slim" else args.upstream_tag
 

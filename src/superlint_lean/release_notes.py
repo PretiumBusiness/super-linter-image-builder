@@ -16,16 +16,18 @@ import argparse
 import json
 import statistics
 import sys
+from collections.abc import Collection, Iterable, Sequence
 from pathlib import Path
+from typing import Any
 
 
-def load(d, profiles):
+def load(d: str | Path, profiles: Collection[str]) -> dict[str, dict[tuple[str, str], list[dict[str, Any]]]]:
     rows = []
     for f in sorted(Path(d).glob("bench-*.jsonl")) + sorted(Path(d).glob("build-*.jsonl")):
         for line in f.read_text().splitlines():
             if line.strip():
                 rows.append(json.loads(line))
-    out: dict[str, dict[tuple[str, str], list[dict]]] = {}
+    out: dict[str, dict[tuple[str, str], list[dict[str, Any]]]] = {}
     for r in rows:
         prof, _, kind = r["variant"].partition("/")
         if profiles and prof not in profiles:
@@ -34,31 +36,31 @@ def load(d, profiles):
     return out
 
 
-def med(rows, key):
+def med(rows: Iterable[dict[str, Any]], key: str) -> float | None:
     vals = [r[key] for r in rows if r.get(key) is not None]
     return statistics.median(vals) if vals else None
 
 
-def mb(b):
+def mb(b: float | None) -> int | None:
     return None if b is None else round(b / 1048576)
 
 
-def fmt_s(v):
+def fmt_s(v: float | None) -> str:
     return "n/a" if v is None else f"{v:.1f} s"
 
 
-def fmt_mb(v):
+def fmt_mb(v: int | None) -> str:
     return "n/a" if v is None else f"{v} MB"
 
 
-def delta(old, new):
+def delta(old: float | None, new: float | None) -> str:
     if old in (None, 0) or new is None:
         return "n/a"
     d = (new - old) / old * 100
     return f"{d:+.0f}%"
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--old-tag", required=True)
     ap.add_argument("--old-dir", required=True)
@@ -116,6 +118,7 @@ def main(argv=None):
     if args.out:
         Path(args.out).write_text(text)
     print(text)
+    return 0
 
 
 if __name__ == "__main__":
