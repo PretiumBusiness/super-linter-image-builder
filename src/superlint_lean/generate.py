@@ -194,7 +194,7 @@ def main(argv=None):
             continue
         out_lines += [f"FROM upstream AS {name}-src",
               "RUN mkdir /out; for p in " + " ".join(shlex.quote(i) for i in items) + "; do \\",
-              '      if [ -e "$p" ] || [ -out_lines "$p" ]; then cp -a --parents "$p" /out; \\',
+              '      if [ -e "$p" ] || [ -L "$p" ]; then cp -a --parents "$p" /out; \\',
               '      else echo "WARNING: missing upstream path: $p" >&2; fi; done',
               f"FROM scratch AS {name}",
               f"COPY --from={name}-src /out /", ""]
