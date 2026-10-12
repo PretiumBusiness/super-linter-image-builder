@@ -1,14 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Build / test artifacts
+.coverage
+pytest-coverage.txt
+coverage.xml
+junit.xml
+htmlcov/
+node_modules/
+
+# Benchmark output
 bench-results.jsonl
 bench-*.jsonl
 results.md
 lint-*.log
 exit-*.txt
 
-dist/
-.venv/
-.coverage
-coverage.xml
-.mypy_cache/
-.ruff_cache/
-.pytest_cache/
-__pycache__/
+.DS_Store
