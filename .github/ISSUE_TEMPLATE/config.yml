@@ -2,5 +2,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Documentation
-    url: https://github.com/PretiumBusiness/super-linter-image-builder#readme
+    url: https://github.com/ghwfxlab/superlint-lean#readme
     about: Check the docs before opening an issue.
