@@ -24,3 +24,6 @@ lint-*.log
 exit-*.txt
 
 .DS_Store
+
+# APM dependencies
+apm_modules/
