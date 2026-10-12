@@ -54,6 +54,17 @@ class TestGenerateOutputs:
         assert plan["baseline_variant"] == "slim"
         assert f"FROM {PYTHON_BASE}" in (out / "Dockerfile").read_text()
 
+    def test_generate_should_set_the_build_variables_when_the_image_is_generated(
+        self, tmp_path: Path, upstream_dockerfile: Path, yaml_env: Path
+    ) -> None:
+        out = tmp_path / "out"
+
+        run_generate(out, upstream_dockerfile, "--env", str(yaml_env))
+
+        dockerfile = (out / "Dockerfile").read_text()
+        assert "ARG BUILD_VERSION=9.0.0" in dockerfile
+        assert "ENV BUILD_VERSION=$BUILD_VERSION BUILD_REVISION=$BUILD_REVISION BUILD_DATE=$BUILD_DATE" in dockerfile
+
     def test_generate_should_ignore_all_codebase_when_it_is_set_in_the_env_file(
         self, tmp_path: Path, upstream_dockerfile: Path, yaml_env: Path
     ) -> None:

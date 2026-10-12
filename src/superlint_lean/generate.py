@@ -294,6 +294,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         'ENV RENOVATE_X_IGNORE_RE2="true"',
         'ENV ARM_TTK_PSD1="/usr/lib/microsoft/arm-ttk/arm-ttk.psd1"',
         'ENV HOME="/github/home"',
+        # linter.sh runs with `set -u` and reads these, as upstream's release build sets them
+        f"ARG BUILD_VERSION={args.upstream_tag.removeprefix('v')}",
+        "ARG BUILD_REVISION=unknown",
+        "ARG BUILD_DATE=unknown",
+        "ENV BUILD_VERSION=$BUILD_VERSION BUILD_REVISION=$BUILD_REVISION BUILD_DATE=$BUILD_DATE",
     ]
     out_lines += [f'ENV {k}="{v}"' for k, v in env_extra.items()]
     out_lines += [
