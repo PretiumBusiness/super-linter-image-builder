@@ -30,7 +30,7 @@ uvx --from git+https://github.com/PretiumBusiness/super-linter-image-builder sup
 Commands:
 
 | Command | Purpose |
-|---|---|
+| --- | --- |
 | `superlint-lean generate` | `VALIDATE_*` flags (env files or a workflow) -> Dockerfile, tool self-checks and plan |
 | `superlint-lean drift` | PR drift check: fails when changed files are not covered by the enabled linters |
 | `superlint-lean sync-mapping` | Compare the linter mapping with an upstream checkout and add draft entries |
@@ -39,12 +39,12 @@ Commands:
 ## Layout
 
 | Path | Purpose |
-|---|---|
+| --- | --- |
 | `src/superlint_lean/` | The package: `cli.py`, `generate.py`, `drift.py`, `config.py` (reads workflows and env files with upstream's `VALIDATE_*` semantics), `mapping_sync.py`, `release_notes.py` |
-| `src/superlint_lean/data/` | `linters.json` (flag -> upstream paths, venvs, npm and apk packages), `filetypes.json` (file-type rules transcribed from upstream), `prune-node-modules.js` |
-| `tests/` | Unit tests, using the ghwm workflow as a fixture |
-| `base/opinionated.env` | The opinionated base: the checks almost every repository wants (editorconfig, env, actionlint, zizmor, gitleaks, json, markdown, natural language, yaml, shell, hadolint) |
-| `toolchains/` | Example toolchains on top of the base: python, java, dotnet, rust, c-cpp, frontend-{vanilla,react,vue,angular,svelte}, base-only |
+| `src/superlint_lean/data/` | `linters.json` (flag -> upstream paths, venvs, npm and apk packages), `filetypes.json` (file type rules transcribed from upstream), `prune-node-modules.js` |
+| `tests/` | pytest suite (Arrange/Act/Assert), using the ghwm workflow as a fixture |
+| `base/opinionated.env` | The opinionated base: the checks almost every repository wants (EditorConfig, env, actionlint, zizmor, gitleaks, JSON, Markdown, natural language, YAML, shell, hadolint) |
+| `toolchains/` | Example toolchains on top of the base: python, Java, dotnet, rust, c-cpp, frontend-{vanilla,react,vue,angular,svelte}, base-only |
 | `examples/` | `ghwm.env` (a real repository's exact flags, without the base) and `with-extras.env` |
 | `scripts/` | `bench-pull.sh`, `compare.sh`, `summarize.sh`: cold pull timing and result tables |
 | `sim/` | Pull-time simulation (estimates, runs without a registry) |
@@ -54,12 +54,22 @@ Commands:
 ## Development
 
 ```sh
-make install     # uv sync
-make test        # pytest with coverage
-make lint        # ruff
-make type-check  # mypy
-make build       # sdist and wheel
+make install          # uv sync
+make setup-precommit  # pre-commit hooks (super-linter and the tests)
+make test             # pytest with coverage
+make lint             # ruff
+make type-check       # mypy
+make lang             # textlint for the docs
+make super-linter     # super-linter via Docker
+make build            # sdist and wheel
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow, [AGENTS.md](AGENTS.md)
+for the guide used by coding agents, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+and [docs/reference/cli.md](docs/reference/cli.md) for the internals and the
+command reference, and [docs/repository-settings.md](docs/repository-settings.md)
+for the repository settings. Report vulnerabilities as described in
+[SECURITY.md](SECURITY.md).
 
 ## Configuration
 
@@ -99,7 +109,7 @@ jobs:
       contents: read
     uses: PretiumBusiness/super-linter-image-builder/.github/workflows/drift-blocker.yml@main
     with:
-      workflow: .github/workflows/linter.yml   # the workflow with the super-linter step
+      workflow: .github/workflows/super-linter.yaml   # the workflow with the super-linter step
       allow_ext: "txt lock"                    # file types you deliberately do not lint
 ```
 
@@ -107,13 +117,13 @@ The configuration is read from the `env:` of the Super-Linter step, with the
 upstream rules: if any `VALIDATE_X` is `true`, only those linters run; if only
 `false` values are set, everything else runs. `FILTER_REGEX_INCLUDE` and
 `FILTER_REGEX_EXCLUDE` are respected. The same discovery works in the compiler:
-`superlint-lean generate --workflow .github/workflows/linter.yml ...`. Content-based
+`superlint-lean generate --workflow .github/workflows/super-linter.yaml ...`. Content-based
 detections (OpenAPI, CloudFormation, Kubernetes, ARM, AWS States, Ansible) are
 not modelled, so a YAML file of those kinds is only checked as plain YAML.
 
 ## Try it locally
 
-```
+```sh
 superlint-lean generate --env base/opinionated.env --env toolchains/python.env \
   --upstream-tag v9.0.0 --upstream-dockerfile <upstream Dockerfile at that tag> --out build/python
 docker buildx build build/python -t lean-python
