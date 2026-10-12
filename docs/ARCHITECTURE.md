@@ -6,22 +6,40 @@
 that would outgrow them. Every command starts from the same input: the
 `VALIDATE_*` flags of a repository, resolved with upstream's semantics.
 
-```text
-env files / workflow (VALIDATE_*)
-            │
-            ▼
-   config.effective_flags()
-            │
-   ┌────────┼───────────────────┐
-   ▼        ▼                   ▼
-generate   drift          mapping_sync
-   │        │                   │
-   ▼        ▼                   ▼
-build      PR check         linters.json
-context    (exit code)      (draft entries)
-   │
-   ▼
-release_notes (benchmarks of two upstream versions)
+```mermaid
+flowchart TD
+    flags["VALIDATE_* flags<br/>env files or a workflow"] --> config["config.effective_flags()<br/>upstream semantics"]
+    config --> generate["generate"]
+    config --> drift["drift"]
+    generate --> context["Build context<br/>Dockerfile, checks.sh, plan.json"]
+    drift --> check["PR check<br/>exit code and report"]
+
+    upstream["Upstream Super-Linter checkout"] --> sync["sync-mapping"]
+    sync --> mapping[("linters.json<br/>draft entries")]
+    mapping --> generate
+
+    bench["bench-*.jsonl<br/>two upstream versions"] --> notes["release-notes"]
+    notes --> md["Release notes<br/>before and after"]
+```
+
+`generate` and `drift` start from the flags of the repository. `sync-mapping` starts
+from an upstream checkout and keeps `linters.json`, which `generate` reads, complete.
+`release-notes` starts from benchmark results.
+
+### Following upstream
+
+Nothing runs for upstream unless it has published a newer release than the one pinned
+in `upstream-version.txt`.
+
+```mermaid
+flowchart LR
+    cron["Weekly schedule<br/>or manual run"] --> detect{"Upstream ahead<br/>of the pin?"}
+    detect -- no --> stop(["Stop: one API call"])
+    detect -- yes --> sync["sync-mapping<br/>add draft entries"]
+    sync --> verify["Build an all-linters image<br/>and run the tool checks"]
+    verify --> pr["Pull request<br/>bumps the pin"]
+    pr -- merged --> release["release workflow<br/>benchmark old and new"]
+    release --> notes["release-notes<br/>GitHub release"]
 ```
 
 ## Modules
