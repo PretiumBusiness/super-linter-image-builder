@@ -1,9 +1,8 @@
-#!/usr/bin/env python3
 """Fail a pull request that adds files the repository's lean image does not lint.
 
 Usage:
-  compiler/drift_check.py --workflow .github/workflows/linter.yml --base origin/main
-  compiler/drift_check.py --env super-linter.env --files-from changed.txt
+  superlint-lean drift --workflow .github/workflows/linter.yml --base origin/main
+  superlint-lean drift --env super-linter.env --files-from changed.txt
 
 The configuration comes from a workflow (--workflow, the env of the
 super-linter step) and/or env files (--env). The changed files come from git
@@ -23,10 +22,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import slconfig  # noqa: E402
+from superlint_lean import config as slconfig
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parent / "data"
 
 
 def file_flags(path, table, root=None):
@@ -97,7 +95,7 @@ def check(env, files, upstream_flags, table, root=None, allow_ext=()):
     return findings
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--workflow", action="append", default=[], help="workflow with a super-linter step (repeatable)")
     ap.add_argument("--env", action="append", default=[], help="env file with VALIDATE_* lines (repeatable)")
@@ -110,7 +108,7 @@ def main():
     ap.add_argument("--mapping", default=str(HERE / "linters.json"))
     ap.add_argument("--filetypes", default=str(HERE / "filetypes.json"))
     ap.add_argument("--report", help="write a Markdown report here")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     try:
         env = {}

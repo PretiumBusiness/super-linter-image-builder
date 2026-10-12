@@ -1,7 +1,7 @@
 ---
 name: Upstream sync
 
-# Keeps compiler/linters.json in step with upstream Super-Linter.
+# Keeps src/superlint_lean/data/linters.json in step with upstream Super-Linter.
 #
 # Nothing here does work on upstream's behalf unless upstream has a newer
 # release than the one pinned in upstream-version.txt:
@@ -19,7 +19,7 @@ name: Upstream sync
 #
 # detect and coverage run on GitHub-hosted runners (coverage also runs for pull
 # requests, which must never run on the self-hosted runner). sync needs docker
-# with buildx, python3, jq, git and gh (a GitHub-hosted runner has them all).
+# with buildx, uv (installed by the workflow), jq, git and gh (a GitHub-hosted runner has them all).
 # Opening the pull request needs the repository setting "Allow GitHub Actions to
 # create and approve pull requests". Without it the branch is still pushed.
 
@@ -38,13 +38,14 @@ on:
         required: false
   pull_request:
     paths:
-      - compiler/**
+      - src/**
+      - pyproject.toml
       - upstream-version.txt
       - .github/workflows/upstream-sync.yml
   push:
     branches: [main]
     paths:
-      - compiler/**
+      - src/**
       - upstream-version.txt
 
 permissions:
@@ -79,14 +80,17 @@ jobs:
             lib
             dependencies
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
       - name: Compare the mapping with upstream
         run: |
           set +e
-          python3 compiler/sync_mapping.py --upstream upstream --report coverage.md
+          uv run superlint-lean sync-mapping --upstream upstream --report coverage.md
           rc=$?
           cat coverage.md >> "$GITHUB_STEP_SUMMARY"
           if [ "$rc" -ne 0 ]; then
-            echo "::error::compiler/linters.json does not match upstream ${{ steps.pin.outputs.pinned }}. See the job summary."
+            echo "::error::src/superlint_lean/data/linters.json does not match upstream ${{ steps.pin.outputs.pinned }}. See the job summary."
             exit 1
           fi
 
@@ -153,10 +157,13 @@ jobs:
             lib
             dependencies
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
       - name: Add missing linters to the mapping
         run: |
           set +e
-          python3 compiler/sync_mapping.py --upstream upstream --write --report sync-report.md
+          uv run superlint-lean sync-mapping --upstream upstream --write --report sync-report.md
           cat sync-report.md >> "$GITHUB_STEP_SUMMARY"
           exit 0
 
@@ -164,7 +171,7 @@ jobs:
         continue-on-error: true
         run: |
           docker system prune -af >/dev/null 2>&1 || true
-          python3 compiler/generate.py --all --upstream-tag "$TAG" \
+          uv run superlint-lean generate --all --upstream-tag "$TAG" \
             --upstream-dockerfile upstream/Dockerfile --out build-all
           docker buildx build build-all --provenance=false --sbom=false --load -t lean-all:check
           docker run --rm -v "$PWD/build-all/checks.sh:/checks.sh:ro" --entrypoint bash \
@@ -177,7 +184,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -q -B "$branch"
-          git add upstream-version.txt compiler/linters.json
+          git add upstream-version.txt src/superlint_lean/data/linters.json
           git commit -q -m "Sync mapping with upstream ${TAG}"
           git push -f origin "$branch"
           {

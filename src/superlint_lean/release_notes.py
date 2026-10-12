@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
 """Release notes comparing the benchmark results of two upstream versions.
 
 Usage:
-  scripts/release_notes.py --old-tag v9.0.0 --old-dir results/by-tag/v9.0.0 \\
+  superlint-lean release-notes --old-tag v9.0.0 --old-dir results/by-tag/v9.0.0 \\
       --new-tag v9.1.0 --new-dir results/by-tag/v9.1.0 [--profiles ghwm,python] \\
       [--mapping-diff mapping.diff] [--out notes.md]
 
@@ -59,7 +58,7 @@ def delta(old, new):
     return f"{d:+.0f}%"
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--old-tag", required=True)
     ap.add_argument("--old-dir", required=True)
@@ -68,7 +67,7 @@ def main():
     ap.add_argument("--profiles", default="")
     ap.add_argument("--mapping-diff", help="file with the mapping changes between the versions")
     ap.add_argument("--out")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     wanted = {p for p in args.profiles.split(",") if p}
     old, new = load(args.old_dir, wanted), load(args.new_dir, wanted)

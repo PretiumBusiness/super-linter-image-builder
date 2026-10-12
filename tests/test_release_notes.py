@@ -23,7 +23,7 @@ class ReleaseNotes(unittest.TestCase):
             for name, items in (("old", old), ("new", new)):
                 Path(d, name).mkdir()
                 rows(Path(d, name, "bench-p.jsonl"), items)
-            out = subprocess.run([sys.executable, str(ROOT / "scripts/release_notes.py"), "--old-tag", "v1",
+            out = subprocess.run([sys.executable, "-m", "superlint_lean", "release-notes", "--old-tag", "v1",
                                   "--old-dir", f"{d}/old", "--new-tag", "v2", "--new-dir", f"{d}/new",
                                   "--profiles", profiles], capture_output=True, text=True)
         self.assertEqual(out.returncode, 0, out.stderr)

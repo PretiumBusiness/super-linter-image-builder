@@ -8,7 +8,7 @@ name: Toolchain benchmark
 # Runs on ubuntu-latest by default. To use your own runner, set the RUNNER_LABELS
 # repository variable (for example ["self-hosted", "linux"]) or pass runner_labels.
 # Needs on that runner: docker with
-# buildx, python3, jq, curl, git.
+# buildx, uv (installed by the workflow), jq, curl, git.
 
 on:
   workflow_dispatch:
@@ -126,11 +126,14 @@ jobs:
           sparse-checkout: Dockerfile
           sparse-checkout-cone-mode: false
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
       - name: Generate build context
         run: |
           args=()
           if [ "$ENVS" = "ALL" ]; then args=(--all); else for e in $ENVS; do args+=(--env "$e"); done; fi
-          python3 compiler/generate.py "${args[@]}" \
+          uv run superlint-lean generate "${args[@]}" \
             --upstream-tag "$TAG" --upstream-dockerfile upstream/Dockerfile --out build
           {
             echo "BASELINE_IMAGE=$(jq -r .baseline_image build/plan.json)"

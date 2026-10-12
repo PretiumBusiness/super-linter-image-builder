@@ -1,9 +1,8 @@
-#!/usr/bin/env python3
-"""Compare compiler/linters.json with an upstream Super-Linter checkout and add
+"""Compare the bundled linters.json with an upstream Super-Linter checkout and add
 draft entries for linters the mapping does not know yet.
 
 Usage:
-  compiler/sync_mapping.py --upstream path/to/super-linter [--write] [--report report.md]
+  superlint-lean sync-mapping --upstream path/to/super-linter [--write] [--report report.md]
 
 Reads from the upstream checkout:
   lib/globals/languages.sh        every VALIDATE_* flag (LANGUAGE_ARRAY)
@@ -27,7 +26,7 @@ import re
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parent / "data"
 
 
 def upstream_flags(root):
@@ -83,13 +82,13 @@ def derive(flag, cmd, root, bins, venv_names, npm_pkgs):
     return None
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--upstream", required=True, help="upstream Super-Linter checkout")
     ap.add_argument("--mapping", default=str(HERE / "linters.json"))
     ap.add_argument("--write", action="store_true", help="add draft entries to the mapping file")
     ap.add_argument("--report", help="write a Markdown report here")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     root = Path(args.upstream)
     path = Path(args.mapping)

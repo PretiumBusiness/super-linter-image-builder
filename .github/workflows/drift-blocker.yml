@@ -64,6 +64,9 @@ jobs:
           path: .lean-tool
           persist-credentials: false
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
       - name: Check changed files against the Super-Linter configuration
         env:
           WORKFLOW: ${{ inputs.workflow }}
@@ -81,7 +84,7 @@ jobs:
             args+=(--base "HEAD~1")
           fi
           set +e
-          python3 .lean-tool/compiler/drift_check.py "${args[@]}" --report drift.md
+          uv run --project .lean-tool --no-dev superlint-lean drift "${args[@]}" --report drift.md
           rc=$?
           cat drift.md >> "$GITHUB_STEP_SUMMARY"
           exit $rc

@@ -6,12 +6,12 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "compiler"))
-import drift_check  # noqa: E402
-import slconfig  # noqa: E402
+DATA = ROOT / "src/superlint_lean/data"
+from superlint_lean import drift as drift_check
+from superlint_lean import config as slconfig
 
-UPSTREAM = set(json.loads((ROOT / "compiler/linters.json").read_text())["linters"])
-TABLE = json.loads((ROOT / "compiler/filetypes.json").read_text())
+UPSTREAM = set(json.loads((DATA / "linters.json").read_text())["linters"])
+TABLE = json.loads((DATA / "filetypes.json").read_text())
 FIXTURE = ROOT / "tests/fixtures/ghwm-workflow.yml"
 
 

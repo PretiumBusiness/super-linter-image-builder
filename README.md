@@ -18,26 +18,48 @@ Status: early. The first step is measuring whether this is worth building. See
 4. A scheduled job rebuilds when upstream publishes a new release.
 5. The workflows are distributed through the ghwm registry.
 
+## Install
+
+The CLI is a Python package, managed with [uv](https://docs.astral.sh/uv/):
+
+```sh
+uv tool install superlint-lean            # once it is published to PyPI
+uvx --from git+https://github.com/PretiumBusiness/super-linter-image-builder superlint-lean --help
+```
+
+Commands:
+
+| Command | Purpose |
+|---|---|
+| `superlint-lean generate` | `VALIDATE_*` flags (env files or a workflow) -> Dockerfile, tool self-checks and plan |
+| `superlint-lean drift` | PR drift check: fails when changed files are not covered by the enabled linters |
+| `superlint-lean sync-mapping` | Compare the linter mapping with an upstream checkout and add draft entries |
+| `superlint-lean release-notes` | Release notes with before/after benchmarks of two upstream versions |
+
 ## Layout
 
 | Path | Purpose |
 |---|---|
-| `compiler/generate.py` | Profile (`VALIDATE_*` flags) -> Dockerfile, tool self-checks and plan |
-| `compiler/linters.json` | Flag -> upstream paths, venvs, npm packages, apk packages |
-| `compiler/prune-node-modules.js` | Copies only the dependency closure of the needed npm packages |
+| `src/superlint_lean/` | The package: `cli.py`, `generate.py`, `drift.py`, `config.py` (reads workflows and env files with upstream's `VALIDATE_*` semantics), `mapping_sync.py`, `release_notes.py` |
+| `src/superlint_lean/data/` | `linters.json` (flag -> upstream paths, venvs, npm and apk packages), `filetypes.json` (file-type rules transcribed from upstream), `prune-node-modules.js` |
+| `tests/` | Unit tests, using the ghwm workflow as a fixture |
 | `base/opinionated.env` | The opinionated base: the checks almost every repository wants (editorconfig, env, actionlint, zizmor, gitleaks, json, markdown, natural language, yaml, shell, hadolint) |
 | `toolchains/` | Example toolchains on top of the base: python, java, dotnet, rust, c-cpp, frontend-{vanilla,react,vue,angular,svelte}, base-only |
-| `examples/ghwm.env` | A real repository's exact flags, without the base |
+| `examples/` | `ghwm.env` (a real repository's exact flags, without the base) and `with-extras.env` |
+| `scripts/` | `bench-pull.sh`, `compare.sh`, `summarize.sh`: cold pull timing and result tables |
 | `sim/` | Pull-time simulation (estimates, runs without a registry) |
 | `overlay/Dockerfile.ghwm` | The first hand-built overlay (kept for reference) |
-| `examples/ghwm.env` | The ghwm Super-Linter environment, used as test input |
-| `compiler/drift_check.py`, `compiler/filetypes.json` | PR drift blocker: fails when a PR adds files whose linters are not enabled (file-type rules transcribed from upstream) |
-| `compiler/slconfig.py` | Reads the Super-Linter configuration from workflows and env files, with upstream's `VALIDATE_*` semantics |
-| `.github/workflows/drift-blocker.yml` | Reusable workflow wrapping the drift check |
-| `tests/` | Unit tests (`python3 -m unittest discover -s tests`), using the ghwm workflow as a fixture |
-| `scripts/bench-pull.sh` | Cold pull timing |
-| `scripts/summarize.sh` | Results table from benchmark output |
-| `.github/workflows/profiles.yml` | Per profile: generate, push to GHCR, verify tools, benchmark cold and warm pulls (hosted or your own runner) |
+| `.github/workflows/` | `tests`, `profiles` (benchmarks), `upstream-sync`, `release`, and the reusable `drift-blocker` |
+
+## Development
+
+```sh
+make install     # uv sync
+make test        # pytest with coverage
+make lint        # ruff
+make type-check  # mypy
+make build       # sdist and wheel
+```
 
 ## Configuration
 
@@ -85,14 +107,14 @@ The configuration is read from the `env:` of the Super-Linter step, with the
 upstream rules: if any `VALIDATE_X` is `true`, only those linters run; if only
 `false` values are set, everything else runs. `FILTER_REGEX_INCLUDE` and
 `FILTER_REGEX_EXCLUDE` are respected. The same discovery works in the compiler:
-`generate.py --workflow .github/workflows/linter.yml ...`. Content-based
+`superlint-lean generate --workflow .github/workflows/linter.yml ...`. Content-based
 detections (OpenAPI, CloudFormation, Kubernetes, ARM, AWS States, Ansible) are
 not modelled, so a YAML file of those kinds is only checked as plain YAML.
 
 ## Try it locally
 
 ```
-python3 compiler/generate.py --env base/opinionated.env --env toolchains/python.env \
+superlint-lean generate --env base/opinionated.env --env toolchains/python.env \
   --upstream-tag v9.0.0 --upstream-dockerfile <upstream Dockerfile at that tag> --out build/python
 docker buildx build build/python -t lean-python
 docker run --rm -v "$PWD/build/python/checks.sh:/checks.sh:ro" --entrypoint bash lean-python /checks.sh

@@ -3,3 +3,12 @@ bench-*.jsonl
 results.md
 lint-*.log
 exit-*.txt
+
+dist/
+.venv/
+.coverage
+coverage.xml
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+__pycache__/
