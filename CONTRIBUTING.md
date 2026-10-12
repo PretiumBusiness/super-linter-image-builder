@@ -34,6 +34,7 @@ and inclusive environment. Please report unacceptable behavior to the maintainer
 3. **Node.js and npx** for prose linting of the documentation.
 4. **Docker** (optional) for the container-based super-linter run.
 5. **[APM](https://github.com/microsoft/apm)** (optional) to restore the agent skills.
+6. **[ghwm](https://github.com/ghwfxlab/ghwm)** (optional) to update the managed workflows.
 
 ---
 
@@ -65,6 +66,10 @@ Use the [Makefile](Makefile) targets:
 | `make build` | Build the sdist and wheel. |
 
 The pre-commit hooks run `make super-linter-fix` and `make test` before each commit.
+
+The `super-linter`, `auto-assign-pr` and `auto-release` workflows are managed with
+ghwm (`ghwm.yml`, `ghwm.lock`). Do not edit the workflow files; change the versions in
+`ghwm.yml` and run `ghwm install` (or `ghwm upgrade`). Their config files are ours to edit.
 
 ---
 

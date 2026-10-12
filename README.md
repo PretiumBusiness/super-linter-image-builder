@@ -109,7 +109,7 @@ jobs:
       contents: read
     uses: PretiumBusiness/super-linter-image-builder/.github/workflows/drift-blocker.yml@main
     with:
-      workflow: .github/workflows/linter.yml   # the workflow with the super-linter step
+      workflow: .github/workflows/super-linter.yaml   # the workflow with the super-linter step
       allow_ext: "txt lock"                    # file types you deliberately do not lint
 ```
 
@@ -117,7 +117,7 @@ The configuration is read from the `env:` of the Super-Linter step, with the
 upstream rules: if any `VALIDATE_X` is `true`, only those linters run; if only
 `false` values are set, everything else runs. `FILTER_REGEX_INCLUDE` and
 `FILTER_REGEX_EXCLUDE` are respected. The same discovery works in the compiler:
-`superlint-lean generate --workflow .github/workflows/linter.yml ...`. Content-based
+`superlint-lean generate --workflow .github/workflows/super-linter.yaml ...`. Content-based
 detections (OpenAPI, CloudFormation, Kubernetes, ARM, AWS States, Ansible) are
 not modelled, so a YAML file of those kinds is only checked as plain YAML.
 

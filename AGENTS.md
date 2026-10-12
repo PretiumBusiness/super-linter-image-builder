@@ -45,6 +45,7 @@ Agents should read and follow these standards for all contributions.
 - `docs/reference/cli.md` - command and option reference
 - `docs/repository-settings.md` - the repository settings that limit interactions
 - `apm.yml`, `apm.lock.yaml` - agent skills managed with APM
+- `ghwm.yml`, `ghwm.lock` - workflows managed with ghwm (`super-linter`, `auto-assign-pr`, `auto-release`); never hand-edit the managed workflow files
 - `upstream-version.txt` - the pinned upstream Super-Linter release
 
 ## Development commands
