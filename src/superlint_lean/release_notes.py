@@ -74,45 +74,45 @@ def main(argv=None):
     profiles = [p for p in sorted(new) if p in old]
     missing = sorted(set(new) - set(old))
 
-    L = [f"## Upstream Super-Linter {args.old_tag} to {args.new_tag}", "",
+    out_lines = [f"## Upstream Super-Linter {args.old_tag} to {args.new_tag}", "",
          f"Cold pull on the same self-hosted runner, median of the runs, before ({args.old_tag}) and after "
          f"({args.new_tag}). Negative changes are faster or smaller.", ""]
     if not profiles:
-        L += ["No profile has results for both versions, so there is nothing to compare."]
+        out_lines += ["No profile has results for both versions, so there is nothing to compare."]
     else:
-        L += ["### Lean image pull time", "",
+        out_lines += ["### Lean image pull time", "",
               f"| Profile | gzip {args.old_tag} | gzip {args.new_tag} | change | zstd {args.old_tag} | zstd {args.new_tag} | change |",
               "|---|---|---|---|---|---|---|"]
         for p in profiles:
             g_o, g_n = med(old[p].get(("lean-gzip", "cold"), []), "pull_s"), med(new[p].get(("lean-gzip", "cold"), []), "pull_s")
             z_o, z_n = med(old[p].get(("lean-zstd", "cold"), []), "pull_s"), med(new[p].get(("lean-zstd", "cold"), []), "pull_s")
-            L.append(f"| {p} | {fmt_s(g_o)} | {fmt_s(g_n)} | {delta(g_o, g_n)} | {fmt_s(z_o)} | {fmt_s(z_n)} | {delta(z_o, z_n)} |")
-        L += ["", "### Lean image size", "",
+            out_lines.append(f"| {p} | {fmt_s(g_o)} | {fmt_s(g_n)} | {delta(g_o, g_n)} | {fmt_s(z_o)} | {fmt_s(z_n)} | {delta(z_o, z_n)} |")
+        out_lines += ["", "### Lean image size", "",
               f"| Profile | unpacked {args.old_tag} | unpacked {args.new_tag} | change | compressed {args.old_tag} | compressed {args.new_tag} | change |",
               "|---|---|---|---|---|---|---|"]
         for p in profiles:
             u_o, u_n = (mb(med(d[p].get(("lean-gzip", "cold"), []), "uncompressed_bytes")) for d in (old, new))
             c_o, c_n = (mb(med(d[p].get(("lean-gzip", "cold"), []), "compressed_bytes")) for d in (old, new))
-            L.append(f"| {p} | {fmt_mb(u_o)} | {fmt_mb(u_n)} | {delta(u_o, u_n)} | {fmt_mb(c_o)} | {fmt_mb(c_n)} | {delta(c_o, c_n)} |")
-        L += ["", "### Upstream image, for reference", "",
+            out_lines.append(f"| {p} | {fmt_mb(u_o)} | {fmt_mb(u_n)} | {delta(u_o, u_n)} | {fmt_mb(c_o)} | {fmt_mb(c_n)} | {delta(c_o, c_n)} |")
+        out_lines += ["", "### Upstream image, for reference", "",
               f"| Profile | pull {args.old_tag} | pull {args.new_tag} | change | unpacked {args.old_tag} | unpacked {args.new_tag} | change |",
               "|---|---|---|---|---|---|---|"]
         for p in profiles:
             b_o, b_n = med(old[p].get(("baseline", "cold"), []), "pull_s"), med(new[p].get(("baseline", "cold"), []), "pull_s")
             s_o, s_n = (mb(med(d[p].get(("baseline", "cold"), []), "uncompressed_bytes")) for d in (old, new))
-            L.append(f"| {p} | {fmt_s(b_o)} | {fmt_s(b_n)} | {delta(b_o, b_n)} | {fmt_mb(s_o)} | {fmt_mb(s_n)} | {delta(s_o, s_n)} |")
-        L += ["", "### Build time (gzip build including push)", "",
+            out_lines.append(f"| {p} | {fmt_s(b_o)} | {fmt_s(b_n)} | {delta(b_o, b_n)} | {fmt_mb(s_o)} | {fmt_mb(s_n)} | {delta(s_o, s_n)} |")
+        out_lines += ["", "### Build time (gzip build including push)", "",
               f"| Profile | {args.old_tag} | {args.new_tag} | change |", "|---|---|---|---|"]
         for p in profiles:
             t_o, t_n = (med(d[p].get(("lean-gzip", "build"), []), "pull_s") for d in (old, new))
-            L.append(f"| {p} | {fmt_s(t_o)} | {fmt_s(t_n)} | {delta(t_o, t_n)} |")
+            out_lines.append(f"| {p} | {fmt_s(t_o)} | {fmt_s(t_n)} | {delta(t_o, t_n)} |")
     if missing:
-        L += ["", f"Not compared (no results for {args.old_tag}): {', '.join(missing)}."]
+        out_lines += ["", f"Not compared (no results for {args.old_tag}): {', '.join(missing)}."]
     if args.mapping_diff and Path(args.mapping_diff).exists() and Path(args.mapping_diff).read_text().strip():
-        L += ["", "### Mapping changes", "", Path(args.mapping_diff).read_text().strip()]
-    L += ["", "Pull times vary with the runner and the network. Compare the change in the lean image with the change in "
+        out_lines += ["", "### Mapping changes", "", Path(args.mapping_diff).read_text().strip()]
+    out_lines += ["", "Pull times vary with the runner and the network. Compare the change in the lean image with the change in "
           "the upstream baseline pulled in the same run before reading anything into a small difference."]
-    text = "\n".join(L) + "\n"
+    text = "\n".join(out_lines) + "\n"
     if args.out:
         Path(args.out).write_text(text)
     print(text)
