@@ -8,6 +8,13 @@ name: Publish Super-Linter image
 #   ghcr.io/<owner>/<repo>/lint:<upstream tag>              moves with each rebuild
 #   ghcr.io/<owner>/<repo>/lint:<upstream tag>-<short sha>  immutable
 #
+# Optionally it points the SUPER_LINTER_IMAGE repository variable (read by the
+# super-linter workflow) at the immutable tag it just pushed. Writing a
+# repository variable needs more than the workflow token, so this only happens
+# when the VARIABLES_TOKEN secret exists (a token allowed to write Actions
+# variables). Without it, set the variable once to the moving tag
+# (ghcr.io/<owner>/<repo>/lint:<upstream tag>) and every rebuild is picked up.
+#
 # It runs when the linter flags, the upstream pin or the generator change on
 # main, or by hand. It never runs on a schedule: a new upstream release arrives
 # through upstream-version.txt.
@@ -77,6 +84,7 @@ jobs:
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Build and push
+        id: build
         env:
           TAG: ${{ steps.pin.outputs.tag }}
           REPOSITORY: ${{ github.repository }}
@@ -92,3 +100,17 @@ jobs:
             --tag "${image}:${TAG}" --tag "${image}:${TAG}-${SHA::7}" \
             --push
           echo "Pushed \`${image}:${TAG}-${SHA::7}\`" >> "${GITHUB_STEP_SUMMARY}"
+          echo "image=${image}:${TAG}-${SHA::7}" >> "${GITHUB_OUTPUT}"
+
+      - name: Point SUPER_LINTER_IMAGE at the new image
+        env:
+          GH_TOKEN: ${{ secrets.VARIABLES_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          IMAGE: ${{ steps.build.outputs.image }}
+        run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "VARIABLES_TOKEN is not set; leaving SUPER_LINTER_IMAGE as it is." >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+          gh variable set SUPER_LINTER_IMAGE --body "${IMAGE}"
+          echo "SUPER_LINTER_IMAGE is now \`${IMAGE}\`" >> "${GITHUB_STEP_SUMMARY}"
