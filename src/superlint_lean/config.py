@@ -4,11 +4,12 @@ Sources: env files (VALIDATE_*=true lines) and GitHub Actions workflows (the
 `env:` of the workflow, the job and the Super-Linter step).
 
 Semantics follow upstream lib/functions/validation.sh:
-  - no VALIDATE_<LANGUAGE> variable set: every linter is enabled
-  - any set to true and none to false: only those are enabled
-  - any set to false and none to true: every linter except those is enabled
-  - mixing true and false is an error
+    - no VALIDATE_<LANGUAGE> variable set: every linter is enabled
+    - any set to true and none to false: only those are enabled
+    - any set to false and none to true: every linter except those is enabled
+    - mixing true and false is an error
 """
+
 import re
 from collections.abc import Iterable, Mapping
 from pathlib import Path

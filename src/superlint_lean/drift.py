@@ -14,6 +14,7 @@ skipped, as Super-Linter skips them.
 
 Exit code: 0 all covered, 1 uncovered files found, 2 configuration error.
 """
+
 import argparse
 import json
 import os
@@ -70,12 +71,18 @@ def selected(path: str, env: Mapping[str, str]) -> bool:
 
 
 def changed_files(base: str, root: str) -> list[str]:
-    out = subprocess.run(["git", "-C", root, "diff", "--name-only", "--diff-filter=ACMR", f"{base}...HEAD"],
-                         capture_output=True, text=True)
+    out = subprocess.run(
+        ["git", "-C", root, "diff", "--name-only", "--diff-filter=ACMR", f"{base}...HEAD"],
+        capture_output=True,
+        text=True,
+    )
     if out.returncode != 0:
         # fall back to a two-dot diff, e.g. for shallow clones
-        out = subprocess.run(["git", "-C", root, "diff", "--name-only", "--diff-filter=ACMR", base, "HEAD"],
-                             capture_output=True, text=True)
+        out = subprocess.run(
+            ["git", "-C", root, "diff", "--name-only", "--diff-filter=ACMR", base, "HEAD"],
+            capture_output=True,
+            text=True,
+        )
     if out.returncode != 0:
         raise slconfig.ConfigError(f"git diff against {base} failed: {out.stderr.strip()}")
     return [line for line in out.stdout.splitlines() if line]
@@ -111,8 +118,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--base", help="git ref to diff against, e.g. origin/main")
     ap.add_argument("--files-from", help="file with one changed path per line")
     ap.add_argument("--root", default=".", help="repository root (default: current directory)")
-    ap.add_argument("--allow-ext", action="append", default=[], metavar="EXT",
-                    help="file extension or file name you deliberately do not lint, e.g. txt or dockerfile (repeatable)")
+    ap.add_argument(
+        "--allow-ext",
+        action="append",
+        default=[],
+        metavar="EXT",
+        help="file extension or file name you deliberately do not lint, e.g. txt or dockerfile (repeatable)",
+    )
     ap.add_argument("--warn-only", action="store_true", help="report but exit 0")
     ap.add_argument("--mapping", default=str(HERE / "linters.json"))
     ap.add_argument("--filetypes", default=str(HERE / "filetypes.json"))
@@ -139,19 +151,28 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"::error::{e}")
         return 2
 
-    lines = ["### Lean image drift check", "",
-             f"Checked {len(files)} changed file(s); {len(findings)} not covered by the configured linters.", ""]
+    lines = [
+        "### Lean image drift check",
+        "",
+        f"Checked {len(files)} changed file(s); {len(findings)} not covered by the configured linters.",
+        "",
+    ]
     for f in findings:
         opts = ", ".join(f"`VALIDATE_{x}`" for x in f["flags"])
-        msg = (f"{f['file']} would be linted by Super-Linter ({', '.join(f['flags'])}), but none of those linters "
-               f"is enabled, so the lean image does not contain them and the file would go unchecked. "
-               f"Enable one of: {', '.join('VALIDATE_' + x for x in f['flags'])} and rebuild the image, "
-               f"or add the extension to the allow list if the file should not be linted.")
+        msg = (
+            f"{f['file']} would be linted by Super-Linter ({', '.join(f['flags'])}), but none of those linters "
+            f"is enabled, so the lean image does not contain them and the file would go unchecked. "
+            f"Enable one of: {', '.join('VALIDATE_' + x for x in f['flags'])} and rebuild the image, "
+            f"or add the extension to the allow list if the file should not be linted."
+        )
         print(f"::error file={f['file']}::{msg}")
         lines.append(f"- `{f['file']}`: enable one of {opts}")
     if findings:
-        lines += ["", "To fix: enable one of the listed linters in the Super-Linter configuration (the lean image is "
-                  "rebuilt from it), or pass `--allow-ext <ext>` for file types you do not want linted."]
+        lines += [
+            "",
+            "To fix: enable one of the listed linters in the Super-Linter configuration (the lean image is "
+            "rebuilt from it), or pass `--allow-ext <ext>` for file types you do not want linted.",
+        ]
     report = "\n".join(lines)
     print(report)
     if args.report:

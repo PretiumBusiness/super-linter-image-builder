@@ -20,6 +20,7 @@ tool checks when the image is built (see the upstream-sync workflow).
 Exit code: 0 when nothing is missing, 10 when drafts were added or unresolved
 flags remain, so a workflow can tell the mapping needs attention.
 """
+
 import argparse
 import json
 import re
@@ -132,11 +133,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         mapping["linters"] = dict(sorted(table.items()))
         path.write_text(json.dumps(mapping, indent=2) + "\n")
 
-    lines = ["### Mapping sync", "",
-             f"- upstream flags: {len(flags)}", f"- mapped flags: {len(table)}",
-             f"- new flags with a draft entry: {len(drafts)}",
-             f"- new flags needing a manual mapping: {len(unresolved)}",
-             f"- mapped flags no longer in upstream: {len(removed)}", ""]
+    lines = [
+        "### Mapping sync",
+        "",
+        f"- upstream flags: {len(flags)}",
+        f"- mapped flags: {len(table)}",
+        f"- new flags with a draft entry: {len(drafts)}",
+        f"- new flags needing a manual mapping: {len(unresolved)}",
+        f"- mapped flags no longer in upstream: {len(removed)}",
+        "",
+    ]
     if drafts:
         lines += ["**Drafts (verified only by the tool checks, review before merging):**", ""]
         lines += [f"- `{f}`: `{json.dumps(d)}`" for f, d in drafts.items()] + [""]
