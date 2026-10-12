@@ -5,7 +5,11 @@
 #
 # Environment:
 #   BENCH_MODE  cold (default) or warm
-#     cold  remove the local image before every run, then time `docker pull`
+#     cold  remove the local image and every other unused image before every
+#           run, then time `docker pull`. Other images must go too: the gzip and
+#           zstd variants of an image share their uncompressed layers, and a
+#           variant pulled next to the other one would reuse them and look
+#           almost free. This clears unused images on the runner.
 #     warm  image stays on the runner (a self-hosted runner with the image
 #           preloaded); time the no-op `docker pull`, which is what a job pays
 #           when nothing needs downloading
@@ -32,6 +36,13 @@ out="${BENCH_OUT:-bench-results.jsonl}"
 now() { date +%s.%N; }
 elapsed() { awk -v a="$1" -v b="$2" 'BEGIN { printf "%.2f", b - a }'; }
 
+# clear_local_images <image>: leave no layer behind that a pull could reuse
+clear_local_images() {
+  docker image rm -f "$1" >/dev/null 2>&1 || true
+  docker image prune -af >/dev/null 2>&1 || true
+  docker builder prune -af >/dev/null 2>&1 || true
+}
+
 have_crane=false
 if command -v crane >/dev/null 2>&1; then have_crane=true; fi
 
@@ -51,7 +62,7 @@ for i in $(seq 1 "$runs"); do
   load_s=null
 
   if [ "$mode" = "cold" ]; then
-    docker image rm -f "$image" >/dev/null 2>&1 || true
+    clear_local_images "$image"
   fi
 
   t0="$(now)"
@@ -68,7 +79,7 @@ for i in $(seq 1 "$runs"); do
   uncompressed_bytes="$(docker image inspect --format '{{.Size}}' "$image")"
 
   if [ "$mode" = "cold" ] && [ "$have_crane" = true ] && [ "${BENCH_SPLIT:-0}" = "1" ]; then
-    docker image rm -f "$image" >/dev/null 2>&1 || true
+    clear_local_images "$image"
     tarball="$(mktemp --suffix=.tar)"
     t2="$(now)"
     crane pull --platform linux/amd64 "$image" "$tarball" >/dev/null 2>&1 || true
