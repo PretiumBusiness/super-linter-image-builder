@@ -1,0 +1,17 @@
+---
+name: superlint-lean
+version: 1.0.0
+description: Agent skills for developing superlint-lean
+author: Peter M E Frandsen
+# Which agent platforms to deploy to.
+# Resolution order: --target flag > this field > auto-detect from filesystem.
+targets:
+  - agent-skills
+dependencies:
+  apm:
+    - mattpocock/skills/skills/engineering/tdd
+    - mattpocock/skills/skills/engineering/code-review
+    - wshobson/agents/plugins/python-development/skills/python-performance-optimization
+  mcp: []
+includes: auto
+scripts: {}
