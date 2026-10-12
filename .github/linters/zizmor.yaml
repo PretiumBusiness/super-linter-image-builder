@@ -1,0 +1,19 @@
+# Baseline for the benchmark, release and upstream-sync workflows, which predate zizmor in this
+# repository. They are tracked for hardening in a follow-up issue; new workflows must be clean.
+rules:
+  artipacked:
+    ignore:
+      - profiles.yml
+      - upstream-sync.yml
+  excessive-permissions:
+    ignore:
+      - profiles.yml
+      - release.yml
+      - upstream-sync.yml
+  template-injection:
+    ignore:
+      - profiles.yml
+      - upstream-sync.yml
+  self-repository:
+    ignore:
+      - release.yml

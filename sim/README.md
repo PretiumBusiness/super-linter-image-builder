@@ -17,7 +17,7 @@ error bars, not a measurement.
   range you observe (default 60-90 s) are kept, so the unknowns are pinned to
   your real number.
 
-```
+```text
 python3 sim/pull_model.py                      # default 60-90 s observed
 python3 sim/pull_model.py --observed 50 70
 python3 sim/pull_model.py --bandwidth 8 30 --per-conn 3 12 --per-file 5 20   # download-bound world
@@ -27,12 +27,12 @@ python3 sim/pull_model.py --bandwidth 150 400 --per-conn 40 150 --per-file 40 15
 ## Result (estimated components, slim observed at 60-90 s)
 
 | Variant | Pull median (p10-p90) | vs slim | Compressed | Unpacked |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | slim | 74 s (63-86) | 1.0x | 1.7 GB | 5.2 GB |
 | lean, whole `/node_modules` (as committed) | 25 s (20-33) | 3.0x | 0.4 GB | 1.5 GB |
 | lean, pruned `/node_modules` | 10 s (9-13) | 7x | 0.2 GB | 0.6 GB |
 | lean, pruned, zstd layers | 8 s (6-10) | 10x | 0.2 GB | 0.6 GB |
-| illustrative polyglot repo, pruned | 22 s (18-25) | 3.5x | 0.5 GB | 1.5 GB |
+| illustrative polyglot repository, pruned | 22 s (18-25) | 3.5x | 0.5 GB | 1.5 GB |
 
 Download-bound and unpack-bound worlds give the same ordering: whole-npm lean
 2.4-3.1x, pruned 6.5-7.4x, pruned+zstd 8-10x.
@@ -57,7 +57,7 @@ Download-bound and unpack-bound worlds give the same ordering: whole-npm lean
 
 ## Replacing estimates with real data
 
-```
+```text
 sim/profile-image.sh ghcr.io/super-linter/super-linter:slim-v9.0.0 layers-slim.json
 sim/profile-image.sh <lean image> layers-lean.json
 python3 sim/pull_model.py --measured slim=layers-slim.json lean=layers-lean.json

@@ -11,10 +11,12 @@ keywords = ["super-linter", "github-actions", "docker", "ci-cd", "linting"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Software Development :: Build Tools",
 ]
 
@@ -60,16 +62,22 @@ include = ["src", "tests", "README.md", "pyproject.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=superlint_lean --cov-report=term-missing"
+addopts = "--cov=superlint_lean --cov-report=term-missing --cov-report=xml --junitxml=junit.xml"
+junit_family = "legacy"
 
 [tool.ruff]
 target-version = "py312"
 line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "W", "B", "UP", "RUF", "N"]
+select = ["E", "F", "I", "W", "B", "S", "UP", "RUF", "N"]
 # long lines are mostly embedded shell and Dockerfile text
 ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# drift shells out to git with a fixed argument list
+"src/superlint_lean/drift.py" = ["S603", "S607"]
+"tests/*" = ["S101", "S105", "S106", "S108", "S603"]
 
 [tool.mypy]
 python_version = "3.12"
