@@ -1,2 +1,2 @@
-{"variant":"rust/lean-gzip","mode":"build","pull_s":105.0}
-{"variant":"rust/lean-zstd","mode":"build","pull_s":18.0}
+{"variant":"rust/lean-gzip","mode":"build","pull_s":93.1}
+{"variant":"rust/lean-zstd","mode":"build","pull_s":11.5}

@@ -1,0 +1,2 @@
+{"variant":"base-only/lean-gzip","mode":"build","pull_s":64.0}
+{"variant":"base-only/lean-zstd","mode":"build","pull_s":7.4}
