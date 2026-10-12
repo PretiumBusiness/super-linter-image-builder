@@ -9,6 +9,9 @@ Go if the lean image for the first target (ghwm) pulls in about 20 s or less, or
 is at least 3x faster than slim on a **GitHub-hosted** runner. Otherwise the
 honest outcome is a "slim plus caching" write-up.
 
+**Verdict: go.** On a GitHub-hosted runner the ghwm image pulls in 9.2 s against
+65.5 s for slim (7.1x), and every example profile is at least 4x faster.
+
 ## When benchmarks run
 
 Nothing runs on upstream's behalf unless upstream has a newer release than the
@@ -82,6 +85,52 @@ own, as the floor for the toolchains.
 
 ## Results
 
+### GitHub-hosted runner (headline)
+
+Run 38284154555, upstream v9.0.0, `ubuntu-latest`, median of 3 cold pulls (the
+image is removed before each pull). The upstream baseline is `slim-v9.0.0`,
+except rust and dotnet, which need `standard-v9.0.0`. Every profile except
+`ghwm` is the shared base (`base/opinionated.env`) plus its stack flags. Raw
+data is on the `bench-results` branch under `results/by-tag/v9.0.0/`.
+
+| Profile | Upstream pull | Lean pull (gzip) | Faster | Compressed: upstream to lean |
+| --- | --- | --- | --- | --- |
+| ghwm | 65.5 s | 9.2 s | 7.1x | 1310 to 170 MB (-87%) |
+| python | 66.0 s | 11.7 s | 5.7x | 1310 to 210 MB (-84%) |
+| Java | 74.5 s | 13.8 s | 5.4x | 1310 to 233 MB (-82%) |
+| c-cpp | 66.8 s | 8.6 s | 7.8x | 1310 to 156 MB (-88%) |
+| frontend-vanilla | 66.5 s | 8.3 s | 8.0x | 1310 to 152 MB (-88%) |
+| frontend-react | 83.0 s | 12.4 s | 6.7x | 1310 to 156 MB (-88%) |
+| frontend-vue | 74.7 s | 9.7 s | 7.7x | 1310 to 152 MB (-88%) |
+| frontend-angular | 67.4 s | 8.8 s | 7.7x | 1310 to 152 MB (-88%) |
+| frontend-svelte | 67.5 s | 9.3 s | 7.2x | 1310 to 152 MB (-88%) |
+| base-only | 68.3 s | 8.7 s | 7.8x | 1310 to 150 MB (-89%) |
+| rust | 94.4 s | 22.9 s | 4.1x | 1798 to 376 MB (-79%) |
+| dotnet | 78.5 s | 14.1 s | 5.6x | 1798 to 378 MB (-79%) |
+
+What to take from it:
+
+- A lean image pulls 4x to 8x faster, because 79% to 89% fewer compressed bytes
+  have to be downloaded and unpacked. The saving is the same for every stack
+  that only drops other stacks' tools.
+- Warm runner (image already present): pull is a no-op (0.2 s to 0.7 s) for both
+  images. A smaller image does not help a runner that already holds the full one.
+- Do not read the zstd columns of this run. The zstd pulls took 0.2 s to 0.7 s,
+  which is not a real cold pull: the zstd image has the same uncompressed layers
+  as the gzip image pulled just before it, and the runner's Docker reuses
+  layers it already holds. The gzip numbers are not affected because the lean and
+  upstream images share almost no layers. Fixing the measurement is tracked in
+  the open issues.
+- The "unpacked" sizes in this run (3995 MB for slim) are lower than on the
+  self-hosted runner (5789 MB) because the two Docker setups report the size
+  differently, so only compressed sizes are compared above.
+
+### Self-hosted runner (secondary)
+
+Self-hosted numbers are secondary: a runner that keeps layers between jobs, or
+sits close to the registry, makes every variant look faster than most users will
+see.
+
 Run 38144305432, upstream v9.0.0, a self-hosted runner (Proxmox VM,
 2 CPU, 4 GB RAM, 40 GB disk), median of 3 cold pulls. Baseline is upstream
 `slim-v9.0.0`. Every profile except `ghwm` is the shared base
@@ -127,5 +176,5 @@ The lean image is 7037 MB unpacked and 1679 MB compressed against 7885 MB and
 the saving comes from leaving linters out, so the tool pays off for repositories
 that use a subset. The baseline pull of this run did not complete.
 
-Open: GitHub-hosted
-runner numbers (blocked by org billing), upgrade-pull scenario.
+Open: the upgrade-pull scenario (previous tag present, new tag pulled) and a
+cold zstd measurement that does not reuse layers.

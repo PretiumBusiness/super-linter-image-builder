@@ -4,8 +4,18 @@ Generate lean, pinned [Super-Linter](https://github.com/super-linter/super-linte
 images that contain only the linters a repository uses, to cut the cold
 pull-and-unpack time in CI.
 
-Status: early. The first step is measuring whether this is worth building. See
-[docs/benchmarks](docs/benchmarks/README.md) and the open issues.
+Status: working, early. On GitHub-hosted runners a lean image pulls 4x to 8x
+faster than upstream `slim`:
+
+| Stack | Upstream slim | Lean | Faster |
+| --- | --- | --- | --- |
+| ghwm | 65.5 s | 9.2 s | 7.1x |
+| python | 66.0 s | 11.7 s | 5.7x |
+| frontend-react | 83.0 s | 12.4 s | 6.7x |
+| dotnet (against upstream standard) | 78.5 s | 14.1 s | 5.6x |
+
+Cold pull, median of 3, upstream v9.0.0. All profiles, the method and the
+caveats are in [docs/benchmarks](docs/benchmarks/README.md).
 
 ## Idea
 
@@ -131,3 +141,34 @@ docker run --rm -v "$PWD/build/python/checks.sh:/checks.sh:ro" --entrypoint bash
 Profiles marked as needing the upstream `standard` image (dotnet, rust) are
 compared against `standard`, not `slim`. Upstream has no Svelte-specific linter,
 so the Svelte profile covers the JS, TS, CSS and HTML around it.
+
+## Limitations
+
+- Only linters in the mapping (`src/superlint_lean/data/linters.json`, 95 flags
+  for upstream v9.0.0) can be selected. An unknown flag stops `generate` with a
+  message, and new upstream linters start as drafts that need a review (see
+  [CONTRIBUTING.md](CONTRIBUTING.md#extending-the-mapping)).
+- The generator reads upstream's published image and `Dockerfile`. A release
+  that moves tools around can break the mapping; `upstream-sync` reports it
+  before the pin moves.
+- The image is rebuilt after a change reaches `main`. A pull request that
+  changes the enabled linters is still linted with the previous image, and the
+  drift check only catches file types that no enabled linter covers.
+- The saving comes from leaving linters out. With every mapped linter enabled the
+  image is only about 11% smaller than upstream standard.
+- A runner that already holds the upstream image gains nothing: the pull is a
+  no-op either way.
+- Pulling a private image needs credentials: `packages: read` for GHCR in the
+  same organization, otherwise a registry login.
+- Only `linux/amd64` is tested. Images are not signed yet.
+- zstd layers are published, but their pull time has not been measured properly.
+
+## Licence
+
+This repository is MIT licensed (see [LICENSE](LICENSE)). It contains no
+third-party linters. A generated image is built by copying files out of the
+published Super-Linter image, so it contains Super-Linter (MIT) and the linters
+you select, each under its own licence. If you publish such an image you
+redistribute those tools and must follow their licences; check them for the
+linters you pick. The smoke test reads Super-Linter's test fixtures at build
+time and does not copy them into this repository or into an image.
