@@ -25,7 +25,7 @@ def load(d, profiles):
         for line in f.read_text().splitlines():
             if line.strip():
                 rows.append(json.loads(line))
-    out = {}
+    out: dict[str, dict[tuple[str, str], list[dict]]] = {}
     for r in rows:
         prof, _, kind = r["variant"].partition("/")
         if profiles and prof not in profiles:

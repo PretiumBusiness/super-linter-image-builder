@@ -68,7 +68,7 @@ def read_flags(paths):
 def read_extras(paths):
     """EXTRA_APK, EXTRA_NPM, EXTRA_PIP (space separated) and EXTRA_CHECK (one
     command per line, repeatable) from env files."""
-    out = {"APK": [], "NPM": [], "PIP": [], "CHECK": []}
+    out: dict[str, list[str]] = {"APK": [], "NPM": [], "PIP": [], "CHECK": []}
     for p in paths:
         for line in Path(p).read_text().splitlines():
             m = re.match(r'\s*EXTRA_(APK|NPM|PIP|CHECK)\s*=\s*"?(.*?)"?\s*$', line)

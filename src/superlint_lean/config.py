@@ -59,7 +59,8 @@ def parse_workflow(path):
 
 def effective_flags(env, all_flags):
     """Flags that run, given the environment and the full list of upstream flags."""
-    set_true, set_false = set(), set()
+    set_true: set[str] = set()
+    set_false: set[str] = set()
     for key, value in env.items():
         m = re.fullmatch(r"VALIDATE_([A-Z0-9_]+)", key)
         if not m or m.group(1) in NON_LINTER:

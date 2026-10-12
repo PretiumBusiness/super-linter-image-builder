@@ -51,7 +51,7 @@ def upstream_commands(root):
 def dockerfile_binaries(root):
     """basename -> destination path for every COPY --from=<stage> in the Dockerfile."""
     text = (root / "Dockerfile").read_text().replace("\\\n", " ")
-    out = {}
+    out: dict[str, str] = {}
     for src, dest in re.findall(r"^COPY\s+--from=\S+\s+(?:--\S+\s+)*(\S+)\s+(\S+)\s*$", text, re.M):
         name = Path(src).name
         dest = dest + name if dest.endswith("/") else dest
