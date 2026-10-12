@@ -47,7 +47,7 @@ Commands:
 | `toolchains/` | Example toolchains on top of the base: python, Java, dotnet, rust, c-cpp, frontend-{vanilla,react,vue,angular,svelte}, base-only |
 | `examples/` | `ghwm.env` (a real repository's exact flags, without the base) and `with-extras.env` |
 | `scripts/` | `bench-pull.sh`, `compare.sh`, `summarize.sh`: cold pull timing and result tables |
-| `.github/workflows/` | `tests`, `profiles` (benchmarks), `upstream-sync`, `release`, and the reusable `drift-blocker` |
+| `.github/workflows/` | `tests`, `profiles` (benchmarks), `upstream-sync`, `release`, `self-image` (this repository's own lean image), and the reusable `drift-blocker` |
 
 ## Development
 
