@@ -14,3 +14,6 @@ rules:
     ignore:
       - profiles.yml
       - upstream-sync.yml
+  self-repository:
+    ignore:
+      - release.yml
