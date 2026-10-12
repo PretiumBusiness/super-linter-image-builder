@@ -19,7 +19,7 @@ name: Upstream sync
 #
 # detect and coverage run on GitHub-hosted runners (coverage also runs for pull
 # requests, which must never run on the self-hosted runner). sync needs docker
-# with buildx, python3, jq, git and gh on the self-hosted runner.
+# with buildx, python3, jq, git and gh (a GitHub-hosted runner has them all).
 # Opening the pull request needs the repository setting "Allow GitHub Actions to
 # create and approve pull requests". Without it the branch is still pushed.
 
@@ -33,9 +33,9 @@ on:
         required: false
         default: ""
       runner_labels:
-        description: JSON array of runner labels for the sync job
-        default: '["self-hosted", "pretium"]'
-        required: true
+        description: JSON array of runner labels for the sync job (default - the RUNNER_LABELS repository variable, else ubuntu-latest)
+        default: ""
+        required: false
   pull_request:
     paths:
       - compiler/**
@@ -134,7 +134,7 @@ jobs:
     name: Sync to a newer upstream release
     needs: detect
     if: needs.detect.outputs.behind == 'true'
-    runs-on: ${{ fromJSON(inputs.runner_labels || '["self-hosted", "pretium"]') }}
+    runs-on: ${{ fromJSON(inputs.runner_labels || vars.RUNNER_LABELS || '["ubuntu-latest"]') }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PINNED: ${{ needs.detect.outputs.pinned }}

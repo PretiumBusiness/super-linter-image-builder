@@ -37,8 +37,7 @@ Status: early. The first step is measuring whether this is worth building. See
 | `tests/` | Unit tests (`python3 -m unittest discover -s tests`), using the ghwm workflow as a fixture |
 | `scripts/bench-pull.sh` | Cold pull timing |
 | `scripts/summarize.sh` | Results table from benchmark output |
-| `.github/workflows/profiles.yml` | Per profile: generate, push to GHCR, verify tools, benchmark cold and warm pulls (self-hosted runner) |
-| `.github/workflows/benchmark.yml` | Earlier GitHub-hosted benchmark for the ghwm overlay |
+| `.github/workflows/profiles.yml` | Per profile: generate, push to GHCR, verify tools, benchmark cold and warm pulls (hosted or your own runner) |
 
 ## Configuration
 

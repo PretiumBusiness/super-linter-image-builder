@@ -51,12 +51,12 @@ A simulation (`sim/`) predicts scenario 1 before real numbers exist.
 
 ## Method
 
-- Workflow: `.github/workflows/profiles.yml` (manual dispatch, self-hosted runner, one job per stack profile). `benchmark.yml` is the earlier GitHub-hosted version for ghwm only.
+- Workflow: `.github/workflows/profiles.yml` (manual dispatch or called by the release workflow, one job per stack profile; runs on `ubuntu-latest` unless the `RUNNER_LABELS` repository variable or the `runner_labels` input says otherwise).
 - Variants:
   - `slim`: `ghcr.io/super-linter/super-linter:slim-<tag>`
   - `lean-gzip`: `overlay/Dockerfile.ghwm`, default gzip layers
   - `lean-zstd`: same image, zstd-compressed layers
-- Runners: `ubuntu-latest` (headline numbers) and `[self-hosted, pretium]`, cold and warm (`BENCH_MODE`).
+- Runners: `ubuntu-latest` (headline numbers) and optionally a self-hosted runner (repository variable `RUNNER_LABELS`), cold and warm (`BENCH_MODE`).
 - Each run removes the image locally, then times `docker pull`. With `crane`
   available it also records a download-only pull and a `docker load`, giving a
   rough download vs unpack split.
@@ -85,7 +85,7 @@ own, as the floor for the toolchains.
 
 ## Results
 
-Run 38144305432, upstream v9.0.0, runner `[self-hosted, pretium]` (Proxmox VM,
+Run 38144305432, upstream v9.0.0, a self-hosted runner (Proxmox VM,
 2 CPU, 4 GB RAM, 40 GB disk), median of 3 cold pulls. Baseline is upstream
 `slim-v9.0.0`. Every profile except `ghwm` is the shared base
 (`base/opinionated.env`) plus its stack flags. Raw data is on the `bench-results`

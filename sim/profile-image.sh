@@ -5,7 +5,7 @@
 #
 # Writes [{"comp_mb", "unc_mb", "files"}, ...] in layer order. Needs docker,
 # crane, jq and tar. Run it on any machine with registry access (for example
-# the pretium runner). Requires the classic `docker save` format (manifest.json).
+# a self-hosted runner). Requires the classic `docker save` format (manifest.json).
 set -euo pipefail
 
 image="${1:?image}"

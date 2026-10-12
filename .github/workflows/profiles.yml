@@ -5,7 +5,9 @@ name: Toolchain benchmark
 # push it (gzip and zstd layers) to GHCR, verify every tool runs, then measure
 # cold and warm pulls against the upstream baseline image.
 #
-# Runs on the self-hosted runner by default. Needs on that runner: docker with
+# Runs on ubuntu-latest by default. To use your own runner, set the RUNNER_LABELS
+# repository variable (for example ["self-hosted", "linux"]) or pass runner_labels.
+# Needs on that runner: docker with
 # buildx, python3, jq, curl, git.
 
 on:
@@ -28,9 +30,9 @@ on:
         type: boolean
         default: false
       runner_labels:
-        description: JSON array of runner labels
-        default: '["self-hosted", "pretium"]'
-        required: true
+        description: JSON array of runner labels (default - the RUNNER_LABELS repository variable, else ubuntu-latest)
+        default: ""
+        required: false
   # Called by the release workflow, which only runs when the pinned upstream
   # version changes. There is no schedule or push trigger on purpose: benchmarks
   # run on a new upstream version or when someone starts them by hand.
@@ -50,7 +52,7 @@ on:
         default: false
       runner_labels:
         type: string
-        default: '["self-hosted", "pretium"]'
+        default: ""
 
 permissions:
   contents: read
@@ -58,7 +60,7 @@ permissions:
 
 jobs:
   plan:
-    runs-on: ${{ fromJSON(inputs.runner_labels) }}
+    runs-on: ${{ fromJSON(inputs.runner_labels || vars.RUNNER_LABELS || '["ubuntu-latest"]') }}
     outputs:
       matrix: ${{ steps.m.outputs.matrix }}
     steps:
@@ -88,7 +90,7 @@ jobs:
   profile:
     name: ${{ matrix.profile }}
     needs: plan
-    runs-on: ${{ fromJSON(inputs.runner_labels) }}
+    runs-on: ${{ fromJSON(inputs.runner_labels || vars.RUNNER_LABELS || '["ubuntu-latest"]') }}
     strategy:
       fail-fast: false
       # One at a time: the benchmark must not compete with itself for the
@@ -157,8 +159,8 @@ jobs:
             docker buildx build build \
               --provenance=false --sbom=false \
               --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
-              --label "io.pretium.upstream-tag=${TAG}" \
-              --label "io.pretium.profile=${PROFILE}" \
+              --label "io.superlint-lean.upstream-tag=${TAG}" \
+              --label "io.superlint-lean.profile=${PROFILE}" \
               --output "type=image,name=${LEAN_BASE}:${TAG}-${c},push=true,oci-mediatypes=true,compression=${c},force-compression=true"
             t1=$(date +%s.%N)
             jq -nc --arg v "${PROFILE}/lean-${c}" --argjson s "$(awk -v a="$t0" -v b="$t1" 'BEGIN{printf "%.1f", b-a}')" \
@@ -191,7 +193,7 @@ jobs:
           rm -f "$out"
           export BENCH_OUT="$out"
           measure() { # image kind mode
-            BENCH_MODE="$3" scripts/bench-pull.sh "$1" "$RUNS" "${PROFILE}/$2" self-hosted \
+            BENCH_MODE="$3" scripts/bench-pull.sh "$1" "$RUNS" "${PROFILE}/$2" "${{ runner.environment }}" \
               || echo "::warning::benchmark failed: $2 ($3)"
           }
           for mode in cold warm; do
@@ -229,7 +231,7 @@ jobs:
   summary:
     needs: profile
     if: always()
-    runs-on: ${{ fromJSON(inputs.runner_labels) }}
+    runs-on: ${{ fromJSON(inputs.runner_labels || vars.RUNNER_LABELS || '["ubuntu-latest"]') }}
     permissions:
       contents: write
     steps:

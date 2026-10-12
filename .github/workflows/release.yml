@@ -30,9 +30,9 @@ on:
         description: New upstream tag
         required: true
       runner_labels:
-        description: JSON array of runner labels for the benchmarks
-        default: '["self-hosted", "pretium"]'
-        required: true
+        description: JSON array of runner labels for the benchmarks (default - the RUNNER_LABELS repository variable, else ubuntu-latest)
+        default: ""
+        required: false
 
 permissions:
   contents: write
@@ -83,7 +83,7 @@ jobs:
     with:
       upstream_tag: ${{ needs.detect.outputs.old }}
       profiles: ${{ vars.RELEASE_PROFILES || 'ghwm,python,frontend-react,dotnet' }}
-      runner_labels: ${{ inputs.runner_labels || '["self-hosted", "pretium"]' }}
+      runner_labels: ${{ inputs.runner_labels }}
 
   bench-new:
     needs: [detect, bench-old]
@@ -92,7 +92,7 @@ jobs:
     with:
       upstream_tag: ${{ needs.detect.outputs.new }}
       profiles: ${{ vars.RELEASE_PROFILES || 'ghwm,python,frontend-react,dotnet' }}
-      runner_labels: ${{ inputs.runner_labels || '["self-hosted", "pretium"]' }}
+      runner_labels: ${{ inputs.runner_labels }}
 
   release:
     needs: [detect, bench-new]
