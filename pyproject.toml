@@ -38,9 +38,9 @@ exclude-newer = "7 days"
 superlint-lean = "superlint_lean.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/PretiumBusiness/super-linter-image-builder"
-Repository = "https://github.com/PretiumBusiness/super-linter-image-builder"
-Issues = "https://github.com/PretiumBusiness/super-linter-image-builder/issues"
+Homepage = "https://github.com/ghwfxlab/superlint-lean"
+Repository = "https://github.com/ghwfxlab/superlint-lean"
+Issues = "https://github.com/ghwfxlab/superlint-lean/issues"
 
 [build-system]
 requires = ["hatch-vcs", "hatchling"]
