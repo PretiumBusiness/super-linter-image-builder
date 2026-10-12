@@ -67,7 +67,7 @@ flowchart LR
 | `pr-title-check.yaml` | Conventional commit PR titles. |
 | `auto-assign-pr.yaml` | Assigns the author to new pull requests (managed by ghwm). |
 | `auto-release.yaml` | Tags a version and publishes a release when `src/` or `pyproject.toml` change on `main` (managed by ghwm). |
-| `upstream-sync.yaml` | Detects a newer upstream release; only then syncs the mapping and opens a bump pull request. |
+| `upstream-sync.yaml` | Detects a newer upstream release (at least `UPSTREAM_COOLDOWN_DAYS` old, repository variable, default 0); only then syncs the mapping and opens a bump pull request. |
 | `release.yaml` | On a bump of the pin: benchmarks old and new versions and publishes a release. |
 | `profiles.yaml` | Reusable benchmark per stack profile. |
 | `self-image.yaml` | Builds this repository's own lean Super-Linter image from `.github/super-linter.env` and pushes it to GHCR (`ghcr.io/<owner>/<repo>/lint`). |
