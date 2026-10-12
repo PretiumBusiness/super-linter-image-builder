@@ -1,4 +1,4 @@
-# super-linter-image-builder
+# superlint-lean
 
 Generate lean, pinned [Super-Linter](https://github.com/super-linter/super-linter)
 images that contain only the linters a repository uses, to cut the cold
@@ -24,7 +24,7 @@ The CLI is a Python package, managed with [uv](https://docs.astral.sh/uv/):
 
 ```sh
 uv tool install superlint-lean            # once it is published to PyPI
-uvx --from git+https://github.com/PretiumBusiness/super-linter-image-builder superlint-lean --help
+uvx --from git+https://github.com/ghwfxlab/superlint-lean superlint-lean --help
 ```
 
 Commands:
@@ -107,7 +107,7 @@ jobs:
   drift:
     permissions:
       contents: read
-    uses: PretiumBusiness/super-linter-image-builder/.github/workflows/drift-blocker.yml@main
+    uses: ghwfxlab/superlint-lean/.github/workflows/drift-blocker.yml@main
     with:
       workflow: .github/workflows/super-linter.yaml   # the workflow with the super-linter step
       allow_ext: "txt lock"                    # file types you deliberately do not lint

@@ -11,7 +11,7 @@ name: Lean image drift blocker
 #     drift:
 #       permissions:
 #         contents: read
-#       uses: PretiumBusiness/super-linter-image-builder/.github/workflows/drift-blocker.yml@main
+#       uses: ghwfxlab/superlint-lean/.github/workflows/drift-blocker.yml@main
 #       with:
 #         workflow: .github/workflows/linter.yml
 #
@@ -34,7 +34,7 @@ on:
         type: boolean
         default: false
       tool_ref:
-        description: Ref of super-linter-image-builder to use
+        description: Ref of superlint-lean to use
         type: string
         default: main
       runner:
@@ -59,7 +59,7 @@ jobs:
       - name: Check out the tool
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: PretiumBusiness/super-linter-image-builder
+          repository: ghwfxlab/superlint-lean
           ref: ${{ inputs.tool_ref }}
           path: .lean-tool
           persist-credentials: false
