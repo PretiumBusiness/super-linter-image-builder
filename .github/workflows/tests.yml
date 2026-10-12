@@ -15,6 +15,8 @@ jobs:
     name: Lint, type-check, test
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      PYTHON_COVERAGE_LIMIT: 90
     permissions:
       contents: read
     steps:
@@ -40,7 +42,19 @@ jobs:
           exit $rc
 
       - name: Run unit tests
-        run: make test
+        run: make test 2>&1 | tee pytest-coverage.txt
+
+      - name: Read coverage
+        id: coverage
+        run: |
+          COVERAGE=$(awk '/^TOTAL/ {print $(NF)}' pytest-coverage.txt | tr -d '%')
+          echo "value=$COVERAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Fail if coverage too low
+        if: ${{ fromJSON(steps.coverage.outputs.value) < fromJSON(env.PYTHON_COVERAGE_LIMIT) }}
+        run: |
+          echo "Coverage is below ${{ env.PYTHON_COVERAGE_LIMIT }}%!"
+          exit 1
 
       - name: Build
         run: make build
