@@ -1,0 +1,16 @@
+ok: shellcheck --version
+ok: hadolint --version
+ok: editorconfig-checker --version
+ok: dotenv-linter --version
+ok: actionlint -version
+ok: zizmor --version
+ok: gitleaks version
+ok: test -x /usr/bin/git-merge-conflict-markers
+ok: eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.json
+ok: prettier --check /tmp/fx/t.json
+ok: markdownlint -c /action/lib/.automation/.markdown-lint.yml /tmp/fx/t.md
+ok: textlint -c /action/lib/.automation/.textlintrc /tmp/fx/t.md
+ok: shfmt --version
+ok: yamllint -c /action/lib/.automation/.yaml-lint.yml /tmp/fx/t.yml
+ok: dotnet --version
+ok: xmllint --version
