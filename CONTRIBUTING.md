@@ -40,8 +40,8 @@ and inclusive environment. Please report unacceptable behavior to the maintainer
 ## Development Setup
 
 ```sh
-git clone https://github.com/PretiumBusiness/super-linter-image-builder.git
-cd super-linter-image-builder
+git clone https://github.com/ghwfxlab/superlint-lean.git
+cd superlint-lean
 make install            # uv sync
 make setup-precommit    # install the pre-commit hooks
 apm install             # optional: restore .agents/skills
@@ -58,7 +58,7 @@ Use the [Makefile](Makefile) targets:
 | `make test` | pytest with coverage (keep it at 90% or higher). |
 | `make lint` | Ruff check. |
 | `make format` | Ruff formatter. |
-| `make type-check` | mypy. |
+| `make type-check` | mypy in strict mode; every function needs full type hints. |
 | `make lang` / `make lang-fix` | textlint for the documentation. |
 | `make precommit` | Run every pre-commit hook against all files. |
 | `make super-linter` / `make super-linter-fix` | Run Super-Linter via Docker, without or with auto-fix. |
@@ -96,7 +96,7 @@ All tests live in [tests/](tests):
 External contributors fork the repository, then:
 
 ```sh
-git remote add upstream https://github.com/PretiumBusiness/super-linter-image-builder.git
+git remote add upstream https://github.com/ghwfxlab/superlint-lean.git
 git checkout -b type/description
 ```
 

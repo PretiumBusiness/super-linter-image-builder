@@ -41,8 +41,3 @@ request workflows must never run on a self-hosted runner.
 Optional on top, when the owner enables them: code scanning (CodeQL) and code
 quality gates, a required reviewing team with a bypass for pull requests, and a
 tag ruleset for `v*` tags that only the release app may create.
-
-## Secrets and environments
-
-The tests workflow uploads coverage to Codecov and needs `CODECOV_TOKEN`. The
-release automation, if used, runs in a protected environment with a GitHub App.

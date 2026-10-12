@@ -52,7 +52,7 @@ Agents should read and follow these standards for all contributions.
 - `make install` - sync dependencies with `uv`
 - `make test` - run pytest with coverage
 - `make lint` - run Ruff
-- `make type-check` - run mypy
+- `make type-check` - run mypy in strict mode
 - `make format` - run the Ruff formatter
 - `make build` - build sdist and wheel
 - `make lang` - run textlint for prose/docs
@@ -74,6 +74,7 @@ make lang
 ## Code conventions
 
 - Target Python **3.12**.
+- Keep type hints complete; mypy runs in **strict** mode.
 - Keep CLI parsing thin. Put behavior in the module that owns it.
 - Prefer small functions and plain data over hidden state.
 - Match the existing style: simple functions, explicit branching, no unnecessary abstraction.
