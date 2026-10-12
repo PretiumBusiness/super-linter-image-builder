@@ -25,7 +25,6 @@ under `.agents/skills/`, managed with [APM](https://github.com/microsoft/apm)
 - [testing-standards](.agents/skills/testing-standards/SKILL.md): Arrange/Act/Assert, mock isolation, naming conventions.
 - [tdd](.agents/skills/tdd/SKILL.md): red-green loop and vertical slicing.
 - [code review](.agents/skills/code-review/SKILL.md): review changes against the repository standards.
-- [python-performance-optimization](.agents/skills/python-performance-optimization/SKILL.md): profiling and optimisation patterns.
 
 Agents should read and follow these standards for all contributions.
 
@@ -83,7 +82,7 @@ make lang
 
 ## Rules
 
-- Nothing that follows upstream may run unless upstream has a newer release (see `.github/workflows/upstream-sync.yml`).
+- Nothing that follows upstream may run unless upstream has a newer release (see `.github/workflows/upstream-sync.yaml`).
 - Everything stays configurable: the base and toolchains are examples, not the supported set.
 - Keep the mapping complete: `superlint-lean sync-mapping` must report no missing flags for the pinned upstream version.
 

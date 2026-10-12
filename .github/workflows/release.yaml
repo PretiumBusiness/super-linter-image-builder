@@ -8,7 +8,7 @@ name: Release
 #
 #   detect     did the pin change? are there stored results for the old version?
 #   bench-old  only if no results are stored for the old version
-#   bench-new  benchmark the new version (reuses profiles.yml)
+#   bench-new  benchmark the new version (reuses profiles.yaml)
 #   release    compare, write the notes, create the release
 #
 # No schedule and no other trigger: a bump of the pin is the only automatic
@@ -79,7 +79,7 @@ jobs:
   bench-old:
     needs: detect
     if: needs.detect.outputs.changed == 'true' && needs.detect.outputs.has_old == 'false'
-    uses: ./.github/workflows/profiles.yml
+    uses: ./.github/workflows/profiles.yaml
     with:
       upstream_tag: ${{ needs.detect.outputs.old }}
       profiles: ${{ vars.RELEASE_PROFILES || 'ghwm,python,frontend-react,dotnet' }}
@@ -88,7 +88,7 @@ jobs:
   bench-new:
     needs: [detect, bench-old]
     if: always() && needs.detect.outputs.changed == 'true' && needs.bench-old.result != 'cancelled'
-    uses: ./.github/workflows/profiles.yml
+    uses: ./.github/workflows/profiles.yaml
     with:
       upstream_tag: ${{ needs.detect.outputs.new }}
       profiles: ${{ vars.RELEASE_PROFILES || 'ghwm,python,frontend-react,dotnet' }}

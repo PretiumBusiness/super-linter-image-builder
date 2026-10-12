@@ -31,9 +31,8 @@ decision, for example to add a profile to the stored results.
 
 ## Pipeline under test
 
-config -> create image -> push to GHCR -> pull on a runner. Today the "create
-image" step is the hand-built `overlay/Dockerfile.ghwm`; it will be replaced by
-the generated Dockerfile once the compiler exists (issues #3 to #5). Each
+config -> create image -> push to GHCR -> pull on a runner. The "create
+image" step is `superlint-lean generate` followed by `docker build`. Each
 scenario compares upstream slim ("without") with the generated lean image
 ("with").
 
@@ -47,14 +46,12 @@ scenario compares upstream slim ("without") with the generated lean image
 4. **Upgrade pull** (not yet automated): previous upstream tag present, pull the
    next. Needs a second build.
 
-A simulation (`sim/`) predicts scenario 1 before real numbers exist.
-
 ## Method
 
-- Workflow: `.github/workflows/profiles.yml` (manual dispatch or called by the release workflow, one job per stack profile; runs on `ubuntu-latest` unless the `RUNNER_LABELS` repository variable or the `runner_labels` input says otherwise).
+- Workflow: `.github/workflows/profiles.yaml` (manual dispatch or called by the release workflow, one job per stack profile; runs on `ubuntu-latest` unless the `RUNNER_LABELS` repository variable or the `runner_labels` input says otherwise).
 - Variants:
   - `slim`: `ghcr.io/super-linter/super-linter:slim-<tag>`
-  - `lean-gzip`: `overlay/Dockerfile.ghwm`, default gzip layers
+  - `lean-gzip`: generated Dockerfile, default gzip layers
   - `lean-zstd`: same image, zstd-compressed layers
 - Runners: `ubuntu-latest` (headline numbers) and optionally a self-hosted runner (repository variable `RUNNER_LABELS`), cold and warm (`BENCH_MODE`).
 - Each run removes the image locally, then times `docker pull`. With `crane`

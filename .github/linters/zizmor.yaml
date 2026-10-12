@@ -3,17 +3,17 @@
 rules:
   artipacked:
     ignore:
-      - profiles.yml
-      - upstream-sync.yml
+      - profiles.yaml
+      - upstream-sync.yaml
   excessive-permissions:
     ignore:
-      - profiles.yml
-      - release.yml
-      - upstream-sync.yml
+      - profiles.yaml
+      - release.yaml
+      - upstream-sync.yaml
   template-injection:
     ignore:
-      - profiles.yml
-      - upstream-sync.yml
+      - profiles.yaml
+      - upstream-sync.yaml
   self-repository:
     ignore:
-      - release.yml
+      - release.yaml

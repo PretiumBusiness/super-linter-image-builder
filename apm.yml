@@ -11,7 +11,6 @@ dependencies:
   apm:
     - mattpocock/skills/skills/engineering/tdd
     - mattpocock/skills/skills/engineering/code-review
-    - wshobson/agents/plugins/python-development/skills/python-performance-optimization
   mcp: []
 includes: auto
 scripts: {}

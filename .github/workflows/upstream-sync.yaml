@@ -41,7 +41,7 @@ on:
       - src/**
       - pyproject.toml
       - upstream-version.txt
-      - .github/workflows/upstream-sync.yml
+      - .github/workflows/upstream-sync.yaml
   push:
     branches: [main]
     paths:
