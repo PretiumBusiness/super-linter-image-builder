@@ -37,24 +37,6 @@ dependencies:
     .agents/skills/tdd/mocking.md: sha256:3ceb807fdf4a47d6a93d4d9a891e5ba6d362a6247bd08adc451feebfc17361ef
     .agents/skills/tdd/tests.md: sha256:859f9e592c188fda4fc7277dd180e4ce9c7a2e13f6efe1f6f29eccc9d28c106a
   content_hash: sha256:ef3cbb31aa8b1f8a3f9b6a042c230dc9312019e84cdc6337f60890f177fd5764
-- repo_url: wshobson/agents
-  name: python-performance-optimization
-  host: github.com
-  resolved_commit: 46891e7e60da0e52baf1050b7b6391b64e84c6d9
-  version: unknown
-  virtual_path: plugins/python-development/skills/python-performance-optimization
-  is_virtual: true
-  package_type: claude_skill
-  deployed_files:
-  - .agents/skills/python-performance-optimization
-  - .agents/skills/python-performance-optimization/SKILL.md
-  - .agents/skills/python-performance-optimization/references/advanced-patterns.md
-  - .agents/skills/python-performance-optimization/references/details.md
-  deployed_file_hashes:
-    .agents/skills/python-performance-optimization/SKILL.md: sha256:807aa725cc2b46b4d68a11a52e5b345be0449e80b7f4b60c32bfd2c35345afb5
-    .agents/skills/python-performance-optimization/references/advanced-patterns.md: sha256:dc1bca8a377572ba1583316b8288af0e5ca2d2be864dc33889b2d3b1ee5c2abf
-    .agents/skills/python-performance-optimization/references/details.md: sha256:8643031fabcbaf555ae1b4e702f1b5159689a31a4b286280d4df2822c9731281
-  content_hash: sha256:cef1aafbb462ac8f77f63e7ba2a24fb15200b8a14f1f6e96d3f4833c4a2b76db
 deployments:
 - kind: project-relative
   target: agent-skills
@@ -83,42 +65,6 @@ deployments:
   - mattpocock/skills/skills/engineering/code-review
   active_owner: mattpocock/skills/skills/engineering/code-review
   content_hash: sha256:8229ca854e11dc8e6aef2131ee03f31fb1561cf905fab9ccc325180cf3331352
-- kind: project-relative
-  target: agent-skills
-  value: .agents/skills/python-performance-optimization
-  runtime: null
-  scope: project
-  owners:
-  - wshobson/agents/plugins/python-development/skills/python-performance-optimization
-  active_owner: wshobson/agents/plugins/python-development/skills/python-performance-optimization
-  content_hash: null
-- kind: project-relative
-  target: agent-skills
-  value: .agents/skills/python-performance-optimization/SKILL.md
-  runtime: null
-  scope: project
-  owners:
-  - wshobson/agents/plugins/python-development/skills/python-performance-optimization
-  active_owner: wshobson/agents/plugins/python-development/skills/python-performance-optimization
-  content_hash: sha256:807aa725cc2b46b4d68a11a52e5b345be0449e80b7f4b60c32bfd2c35345afb5
-- kind: project-relative
-  target: agent-skills
-  value: .agents/skills/python-performance-optimization/references/advanced-patterns.md
-  runtime: null
-  scope: project
-  owners:
-  - wshobson/agents/plugins/python-development/skills/python-performance-optimization
-  active_owner: wshobson/agents/plugins/python-development/skills/python-performance-optimization
-  content_hash: sha256:dc1bca8a377572ba1583316b8288af0e5ca2d2be864dc33889b2d3b1ee5c2abf
-- kind: project-relative
-  target: agent-skills
-  value: .agents/skills/python-performance-optimization/references/details.md
-  runtime: null
-  scope: project
-  owners:
-  - wshobson/agents/plugins/python-development/skills/python-performance-optimization
-  active_owner: wshobson/agents/plugins/python-development/skills/python-performance-optimization
-  content_hash: sha256:8643031fabcbaf555ae1b4e702f1b5159689a31a4b286280d4df2822c9731281
 - kind: project-relative
   target: agent-skills
   value: .agents/skills/tdd

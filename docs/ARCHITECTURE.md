@@ -62,14 +62,14 @@ flowchart LR
 
 | Workflow | Purpose |
 | :--- | :--- |
-| `tests.yml` | Lint, type-check, test with coverage, build. |
+| `tests.yaml` | Lint, type-check, test with coverage, build. |
 | `super-linter.yaml` | Super-Linter on pull requests and pushes to `main` (managed by ghwm). |
-| `pr-title-check.yml` | Conventional commit PR titles. |
+| `pr-title-check.yaml` | Conventional commit PR titles. |
 | `auto-assign-pr.yaml` | Assigns the author to new pull requests (managed by ghwm). |
 | `auto-release.yaml` | Tags a version and publishes a release when `src/` or `pyproject.toml` change on `main` (managed by ghwm). |
-| `upstream-sync.yml` | Detects a newer upstream release; only then syncs the mapping and opens a bump pull request. |
-| `release.yml` | On a bump of the pin: benchmarks old and new versions and publishes a release. |
-| `profiles.yml` | Reusable benchmark per stack profile. |
+| `upstream-sync.yaml` | Detects a newer upstream release; only then syncs the mapping and opens a bump pull request. |
+| `release.yaml` | On a bump of the pin: benchmarks old and new versions and publishes a release. |
+| `profiles.yaml` | Reusable benchmark per stack profile. |
 | `drift-blocker.yml` | Reusable workflow other repositories call to run `drift`. |
 
 ## Managed workflows
