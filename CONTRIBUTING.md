@@ -18,6 +18,7 @@ pre-configured coding and testing standards under [.agents/skills/](.agents/skil
 - [Development Workflow](#development-workflow)
 - [Coding Standards](#coding-standards)
 - [Testing Standards](#testing-standards)
+- [Extending the mapping](#extending-the-mapping)
 - [Pull Request Process](#pull-request-process)
 
 ---
@@ -95,6 +96,39 @@ All tests live in [tests/](tests):
 - **Edge cases**: include failure paths (invalid values, mixed `true`/`false`, missing files, unknown flags).
 
 ---
+
+## Extending the mapping
+
+`src/superlint_lean/data/linters.json` maps each `VALIDATE_*` flag to what the
+image needs from the upstream image. An entry can have:
+
+| Key | Meaning |
+| --- | --- |
+| `bins` | Binaries to copy, for example `/usr/bin/gitleaks`. |
+| `venvs` | Python virtualenvs under `/venvs` to copy. |
+| `npm` | Groups from `npm_groups` (npm packages to keep in `/node_modules`). |
+| `dirs` | Directories to copy as they are. |
+| `apk` | Alpine packages the tool needs at runtime. |
+| `path`, `env`, `links` | Extra `PATH` entries, environment variables and symlinks. |
+| `upstream`, `baseline` | Set to `standard` when the tool exists only in upstream's standard image. |
+| `check` | Commands run inside the built image (`checks.sh`). Every entry needs at least one. |
+| `draft` | Set by `sync-mapping`; remove it once a person has verified the entry. |
+
+To add or fix an entry:
+
+1. Check out the upstream release in question and run
+   `superlint-lean sync-mapping --upstream <checkout> --report report.md`. With
+   `--write` it adds draft entries for missing flags and lists what it could not
+   place.
+2. Find the tool in upstream's `Dockerfile` (`COPY --from`, `/venvs`,
+   `dependencies/package.json`) and fill in the keys above. Prefer the
+   narrowest copy that works.
+3. Generate an image with the flag, build it and run its `checks.sh`; for a
+   linter with an upstream fixture, `scripts/smoke.sh` also runs a good and a
+   bad file through the real entrypoint.
+4. Update `tests/test_mapping_sync.py` or `tests/test_generate.py` if the
+   derivation or the output changed. `superlint-lean sync-mapping` must report
+   no missing flags for the pinned upstream version.
 
 ## Pull Request Process
 
