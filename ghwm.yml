@@ -1,0 +1,12 @@
+---
+# GitHub Workflow Manager manifest
+# https://github.com/ghwfxlab/ghwm
+# Run: ghwm install
+source: ghwfxlab/ghwm-registry
+
+workflows:
+  - name: auto-assign-pr
+    version: 1.0.2
+
+  - name: auto-release
+    version: 1.0.0

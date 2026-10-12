@@ -1,24 +1,35 @@
+---
 name: Tests
 
-on:
+on: # yamllint disable-line rule:truthy
   pull_request:
   push:
-    branches: [main]
+    branches:
+      - main
+  workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   unit:
     name: Lint, type-check, test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout The Source Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
+
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
-      - run: uv run ruff check --output-format=github src/ tests/
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+
+      - name: Lint
+        run: uv run ruff check --output-format=github src/ tests/
+
       - name: Type-check
         shell: bash
         run: |
@@ -27,5 +38,9 @@ jobs:
           rc=$?
           while IFS= read -r line; do echo "::error::mypy: ${line}"; done < mypy.txt
           exit $rc
-      - run: make test
-      - run: make build
+
+      - name: Run unit tests
+        run: make test
+
+      - name: Build
+        run: make build

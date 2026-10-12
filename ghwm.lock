@@ -1,0 +1,37 @@
+{
+  "lockfileVersion": 1,
+  "packages": [
+    {
+      "name": "auto-assign-pr",
+      "source": "@ghwfxlab/auto-assign-pr",
+      "files": [
+        {
+          "target": ".github/workflows/auto-assign-pr.yaml",
+          "source_hash": "sha256:df611208e35122e380e6636b72c2cdb5374859770c3849805d07f48fa1b58d45"
+        },
+        {
+          "target": ".github/auto_assign.yaml",
+          "source_hash": "sha256:5f7a38dc30a86cb19f820982f032a51d8b1b03579db2aca7ec315b55f1cf0656",
+          "overwrite": false
+        }
+      ],
+      "version": "1.0.2"
+    },
+    {
+      "name": "auto-release",
+      "source": "@ghwfxlab/auto-release",
+      "files": [
+        {
+          "target": ".github/workflows/auto-release.yaml",
+          "source_hash": "sha256:0030e296f50bfdd20e70141e2bc22c1c8a972582f714c03579641ef02abf1cd0"
+        },
+        {
+          "target": ".github/auto-release.yaml",
+          "source_hash": "sha256:4c0be0e3c426a6ab8928932706f52f55088b732a914a2ed9ce9b5815f74e47cc",
+          "overwrite": false
+        }
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}
