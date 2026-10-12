@@ -14,7 +14,7 @@
 | frontend-vue | 74.7 s | 9.7 s | 0.5 s | 7.7x | 166x | 3995 MB | 491 MB | 88% | 1310 MB | 152 MB | 88% | -1% | 75.5 s | 7.5 s |
 | ghwm | 65.5 s | 9.2 s | 0.4 s | 7.1x | 152.2x | 3995 MB | 520 MB | 87% | 1310 MB | 170 MB | 87% | -4% | 71.5 s | 7.2 s |
 | java | 74.5 s | 13.8 s | 0.6 s | 5.4x | 116.3x | 3995 MB | 698 MB | 83% | 1310 MB | 233 MB | 82% | -1% | 85.8 s | 9.5 s |
-| python | 66 s | 11.7 s | 0.5 s | 5.7x | 137.4x | 3995 MB | 660 MB | 83% | 1310 MB | 210 MB | 84% | 1% | 77.3 s | 8 s |
+| python | 69.5 s | 12.6 s | 11.5 s | 5.5x | 6.1x | 3995 MB | 660 MB | 83% | 1310 MB | 210 MB | 84% | 0% | 87.8 s | 6.9 s |
 | rust | 94.4 s | 22.9 s | 0.7 s | 4.1x | 136.8x | 5585 MB | 1091 MB | 80% | 1798 MB | 376 MB | 79% | 1% | 105 s | 18 s |
 
 ### Warm pull (image already on the runner) and container start
@@ -31,5 +31,5 @@
 | frontend-vue | 0.5 s | 0.4 s | 0.2 s | 0.2 s |
 | ghwm | 0.4 s | 0.5 s | 0.2 s | 0.2 s |
 | java | 0.6 s | 0.6 s | 0.2 s | 0.2 s |
-| python | 0.5 s | 0.5 s | 0.2 s | 0.2 s |
+| python | 0.3 s | 0.3 s | 0.2 s | 0.2 s |
 | rust | 0.7 s | 0.7 s | 0.2 s | 0.2 s |
