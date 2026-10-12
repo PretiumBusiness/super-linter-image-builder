@@ -64,7 +64,7 @@ jobs:
     outputs:
       matrix: ${{ steps.m.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: m
         env:
           PROFILES: ${{ inputs.profiles }}
@@ -116,9 +116,9 @@ jobs:
           [ "$(df --output=avail -BG / | tail -1 | tr -dc 0-9)" -ge 25 ] \
             || echo "::warning::less than 25 GB free; large profiles (dotnet) may fail"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: super-linter/super-linter
           ref: ${{ inputs.upstream_tag }}
@@ -127,7 +127,7 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
 
       - name: Generate build context
         run: |
@@ -146,13 +146,13 @@ jobs:
             echo "npm packages kept (roots): $(jq -r '.npm_roots | length' build/plan.json)"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Build and push (gzip and zstd layers)
         run: |
@@ -214,7 +214,7 @@ jobs:
           cp build/plan.json "plan-${PROFILE}.json" || true
           cp build/Dockerfile "Dockerfile-${PROFILE}" || true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: profile-${{ matrix.profile }}
@@ -238,8 +238,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: profile-*
           merge-multiple: true
@@ -250,7 +250,7 @@ jobs:
             echo
             scripts/compare.sh bench-*.jsonl build-*.jsonl
           } | tee results.md >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: results
           path: |
