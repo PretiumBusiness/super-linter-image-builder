@@ -18,7 +18,8 @@ jobs:
           persist-credentials: false
       - name: Install uv
         uses: astral-sh/setup-uv@v6
-      - run: make lint
-      - run: make type-check
+      - run: uv run ruff check --output-format=github src/ tests/
+      - run: uv run mypy src/ | sed 's/^/::error::/' ; exit ${PIPESTATUS[0]}
+        shell: bash
       - run: make test
       - run: make build
