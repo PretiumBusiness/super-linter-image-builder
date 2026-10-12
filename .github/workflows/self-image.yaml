@@ -54,13 +54,16 @@ jobs:
         id: pin
         run: echo "tag=$(tr -d '[:space:]' < upstream-version.txt)" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout the upstream Dockerfile
+      - name: Checkout the upstream Dockerfile and test fixtures
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: super-linter/super-linter
           ref: ${{ steps.pin.outputs.tag }}
           path: upstream
-          sparse-checkout: Dockerfile
+          sparse-checkout: |
+            Dockerfile
+            .editorconfig
+            test/linters
           sparse-checkout-cone-mode: false
           persist-credentials: false
 
@@ -85,7 +88,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - name: Build and push
+      - name: Build the image and smoke-test it
+        env:
+          TAG: ${{ steps.pin.outputs.tag }}
+        run: |
+          docker buildx build build --provenance=false --sbom=false --load --tag smoke:candidate
+          status=0
+          scripts/smoke.sh smoke:candidate build/plan.json upstream > smoke.md || status=$?
+          cat smoke.md
+          { echo "### Smoke test"; echo; cat smoke.md; } >> "${GITHUB_STEP_SUMMARY}"
+          exit "${status}"
+
+      - name: Push the image
         id: build
         env:
           TAG: ${{ steps.pin.outputs.tag }}

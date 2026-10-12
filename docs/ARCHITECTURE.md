@@ -70,7 +70,7 @@ flowchart LR
 | `upstream-sync.yaml` | Detects a newer upstream release (at least `UPSTREAM_COOLDOWN_DAYS` old, repository variable, default 0); only then syncs the mapping and opens a bump pull request. |
 | `release.yaml` | On a bump of the pin: benchmarks old and new versions and publishes a release. |
 | `profiles.yaml` | Reusable benchmark per stack profile. |
-| `self-image.yaml` | Builds this repository's own lean Super-Linter image from `.github/super-linter.env` and pushes it to GHCR (`ghcr.io/<owner>/<repo>/lint`). |
+| `self-image.yaml` | Builds this repository's own lean Super-Linter image from `.github/super-linter.env` smoke-tests it (`scripts/smoke.sh`) and pushes it to GHCR (`ghcr.io/<owner>/<repo>/lint`). |
 | `drift-blocker.yml` | Reusable workflow other repositories call to run `drift`. |
 
 ## Managed workflows
@@ -88,3 +88,12 @@ repository.
 - Nothing that follows upstream runs unless upstream has a newer release.
 - Everything stays configurable; the base and toolchains are examples.
 - Untrusted input (changed files, workflows) is read, never executed.
+
+## Smoke test
+
+`scripts/smoke.sh <image> <plan.json> <upstream-dir>` checks that a built image still lints. For every flag in
+`plan.json` it runs the image with only that linter enabled, once on the good files and once on the bad files
+of Super-Linter's `test/linters/<flag>` fixtures, taken from a checkout at the pinned tag (MIT licensed, so
+they are read, not copied). The verdict comes from the Super-Linter summary, so a linter that found no files
+does not count as a pass. Flags without a fixture are reported, not failed. Upstream's own `TEST_CASE_RUN`
+mode cannot be used because it refuses to run unless every validation is enabled.
