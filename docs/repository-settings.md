@@ -1,7 +1,7 @@
 # Repository settings
 
 The settings below limit how people and automation can interact with the
-repository. They mirror the ghwm repository and are not stored in git, so
+repository. They mirror the ghwm repository and are not stored in Git, so
 `scripts/apply-repository-settings.sh` applies them with the `gh` CLI:
 
 ```sh

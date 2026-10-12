@@ -61,7 +61,7 @@ Use the [Makefile](Makefile) targets:
 | `make type-check` | mypy in strict mode; every function needs full type hints. |
 | `make lang` / `make lang-fix` | textlint for the documentation. |
 | `make precommit` | Run every pre-commit hook against all files. |
-| `make super-linter` / `make super-linter-fix` | Run Super-Linter via Docker, without or with auto-fix. |
+| `make super-linter` / `make super-linter-fix` | Run Super-Linter via Docker, without or with autofix. |
 | `make build` | Build the sdist and wheel. |
 
 The pre-commit hooks run `make super-linter-fix` and `make test` before each commit.
@@ -107,7 +107,7 @@ conventional commits (`feat`, `fix`, `docs`, `test`, `ci`, `chore`, `refactor`).
 ### Branching conventions
 
 - `feat/description` - new features
-- `fix/description` - bug fixes
+- `fix/description` - bugfixes
 - `docs/description` - documentation
 - `test/description` - tests
 - `ci/description` - workflows and GitHub configuration

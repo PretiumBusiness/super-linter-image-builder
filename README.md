@@ -30,7 +30,7 @@ uvx --from git+https://github.com/PretiumBusiness/super-linter-image-builder sup
 Commands:
 
 | Command | Purpose |
-|---|---|
+| --- | --- |
 | `superlint-lean generate` | `VALIDATE_*` flags (env files or a workflow) -> Dockerfile, tool self-checks and plan |
 | `superlint-lean drift` | PR drift check: fails when changed files are not covered by the enabled linters |
 | `superlint-lean sync-mapping` | Compare the linter mapping with an upstream checkout and add draft entries |
@@ -39,12 +39,12 @@ Commands:
 ## Layout
 
 | Path | Purpose |
-|---|---|
+| --- | --- |
 | `src/superlint_lean/` | The package: `cli.py`, `generate.py`, `drift.py`, `config.py` (reads workflows and env files with upstream's `VALIDATE_*` semantics), `mapping_sync.py`, `release_notes.py` |
-| `src/superlint_lean/data/` | `linters.json` (flag -> upstream paths, venvs, npm and apk packages), `filetypes.json` (file-type rules transcribed from upstream), `prune-node-modules.js` |
+| `src/superlint_lean/data/` | `linters.json` (flag -> upstream paths, venvs, npm and apk packages), `filetypes.json` (file type rules transcribed from upstream), `prune-node-modules.js` |
 | `tests/` | pytest suite (Arrange/Act/Assert), using the ghwm workflow as a fixture |
-| `base/opinionated.env` | The opinionated base: the checks almost every repository wants (editorconfig, env, actionlint, zizmor, gitleaks, json, markdown, natural language, yaml, shell, hadolint) |
-| `toolchains/` | Example toolchains on top of the base: python, java, dotnet, rust, c-cpp, frontend-{vanilla,react,vue,angular,svelte}, base-only |
+| `base/opinionated.env` | The opinionated base: the checks almost every repository wants (EditorConfig, env, actionlint, zizmor, gitleaks, JSON, Markdown, natural language, YAML, shell, hadolint) |
+| `toolchains/` | Example toolchains on top of the base: python, Java, dotnet, rust, c-cpp, frontend-{vanilla,react,vue,angular,svelte}, base-only |
 | `examples/` | `ghwm.env` (a real repository's exact flags, without the base) and `with-extras.env` |
 | `scripts/` | `bench-pull.sh`, `compare.sh`, `summarize.sh`: cold pull timing and result tables |
 | `sim/` | Pull-time simulation (estimates, runs without a registry) |

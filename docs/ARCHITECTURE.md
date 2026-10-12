@@ -38,7 +38,7 @@ release_notes (benchmarks of two upstream versions)
 ## Data
 
 - `linters.json` maps each upstream flag to what it needs: binaries, directories, virtualenvs, npm groups, apk packages, links, environment and tool checks. It must cover every flag of the version pinned in `upstream-version.txt`.
-- `filetypes.json` holds the file-type rules transcribed from upstream, so `drift` can tell which linters would lint a file.
+- `filetypes.json` holds the file type rules transcribed from upstream, so `drift` can tell which linters would lint a file.
 
 ## Workflows
 

@@ -24,7 +24,7 @@ under `.agents/skills/`, managed with [APM](https://github.com/microsoft/apm)
 - [python-coding-standards](.agents/skills/python-coding-standards/SKILL.md): typing, error handling, subprocess safety, module boundaries.
 - [testing-standards](.agents/skills/testing-standards/SKILL.md): Arrange/Act/Assert, mock isolation, naming conventions.
 - [tdd](.agents/skills/tdd/SKILL.md): red-green loop and vertical slicing.
-- [code-review](.agents/skills/code-review/SKILL.md): review changes against the repository standards.
+- [code review](.agents/skills/code-review/SKILL.md): review changes against the repository standards.
 - [python-performance-optimization](.agents/skills/python-performance-optimization/SKILL.md): profiling and optimisation patterns.
 
 Agents should read and follow these standards for all contributions.
@@ -103,8 +103,8 @@ When changing code, preserve these unless the task explicitly changes them.
 
 - Exit code `0` all covered, `1` uncovered files, `2` configuration error.
 - A file is uncovered only when upstream would lint it and none of those linters is enabled.
-- `FILTER_REGEX_INCLUDE` and `FILTER_REGEX_EXCLUDE` are respected; `--allow-ext` skips an extension or file name.
-- The check never runs repository code; it reads the workflow and the changed file names (and the first line of extension-less files).
+- `FILTER_REGEX_INCLUDE` and `FILTER_REGEX_EXCLUDE` are respected; `--allow-ext` skips an extension or filename.
+- The check never runs repository code; it reads the workflow and the changed filenames (and the first line of extension-less files).
 
 ### Generate
 
@@ -125,7 +125,7 @@ When changing code, preserve these unless the task explicitly changes them.
 - Prefer `tmp_path` fixtures and small fake upstream checkouts over real network access or Docker.
 - Add negative-path coverage when changing config parsing, the drift check or the mapping sync.
 - If you change flag semantics, update `tests/test_config.py`.
-- If you change file-type detection or the drift report, update `tests/test_drift.py`.
+- If you change file type detection or the drift report, update `tests/test_drift.py`.
 - If you change Dockerfile, `checks.sh` or `plan.json` output, update `tests/test_generate.py`.
 - If you change upstream parsing or draft derivation, update `tests/test_mapping_sync.py`.
 - If you change command dispatch or output, update `tests/test_cli.py`.

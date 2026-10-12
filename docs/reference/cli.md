@@ -34,10 +34,10 @@ Fail when changed files are not covered by the configured linters.
 | Option | Description |
 | :--- | :--- |
 | `--workflow FILE`, `--env FILE` | Where the configuration comes from (repeatable). |
-| `--base REF` | Diff against this git ref. |
+| `--base REF` | Diff against this Git ref. |
 | `--files-from FILE` | File with one changed path per line. |
 | `--root DIR` | Repository root (default: current directory). |
-| `--allow-ext EXT` | Extension or file name you deliberately do not lint (repeatable). |
+| `--allow-ext EXT` | Extension or filename you deliberately do not lint (repeatable). |
 | `--warn-only` | Report but exit `0`. |
 | `--report FILE` | Write a Markdown report. |
 
