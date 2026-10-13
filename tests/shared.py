@@ -49,3 +49,15 @@ def bench_row(
         "uncompressed_bytes": uncompressed_mb * 1048576,
         "compressed_bytes": compressed_mb * 1048576,
     }
+
+
+UPSTREAM_TAG_NEWER = "v9.1.0"
+UPSTREAM_TAG_NEWEST = "v9.2.0"
+PUBLISHED_LONG_AGO = "2026-09-01T12:00:00Z"
+PUBLISHED_LAST_MONTH = "2026-10-01T12:00:00Z"
+PUBLISHED_YESTERDAY = "2026-10-12T12:00:00Z"
+
+
+def release_entry(tag: str, published_at: str, *, draft: bool = False, prerelease: bool = False) -> dict[str, Any]:
+    """One entry of the GitHub releases API."""
+    return {"tag_name": tag, "published_at": published_at, "draft": draft, "prerelease": prerelease}
