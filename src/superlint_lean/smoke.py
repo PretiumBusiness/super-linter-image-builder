@@ -3,10 +3,12 @@
 Usage:
     superlint-lean smoke <image> <plan.json> <upstream-dir>
 
-    plan.json     written by ``superlint-lean generate`` (its "flags" list)
-    upstream-dir  a Super-Linter checkout at the tag the image was built from;
-                  only ``test/linters`` and ``.editorconfig`` are read (MIT
-                  licensed, never copied into this repository or the image)
+    plan.json
+        written by ``superlint-lean generate`` (its "flags" list)
+    upstream-dir
+        a Super-Linter checkout at the tag the image was built from; only
+        ``test/linters`` and ``.editorconfig`` are read (MIT licensed, never
+        copied into this repository or the image)
 
 Each flag uses ``test/linters/<flag in lower case>``. Files with "good" in their
 path must pass and files with "bad" must fail, judged by the Super-Linter
