@@ -1,0 +1,75 @@
+{
+  "flags": [
+    "EDITORCONFIG",
+    "ENV",
+    "GITHUB_ACTIONS",
+    "GITHUB_ACTIONS_ZIZMOR",
+    "GITLEAKS",
+    "JSON",
+    "JSON_PRETTIER",
+    "MARKDOWN",
+    "NATURAL_LANGUAGE",
+    "PYTHON_MYPY",
+    "PYTHON_RUFF",
+    "YAML"
+  ],
+  "upstream_tag": "v9.0.0",
+  "upstream_image": "ghcr.io/super-linter/super-linter:slim-v9.0.0",
+  "baseline_variant": "slim",
+  "baseline_image": "ghcr.io/super-linter/super-linter:slim-v9.0.0",
+  "python_base": "python:3.14.7-alpine3.24",
+  "links": [],
+  "bins": [
+    "/usr/bin/editorconfig-checker",
+    "/usr/bin/dotenv-linter",
+    "/usr/bin/actionlint",
+    "/usr/bin/gitleaks"
+  ],
+  "dirs": [],
+  "venvs": [
+    "zizmor",
+    "mypy",
+    "ruff",
+    "yamllint"
+  ],
+  "npm_roots": [
+    "eslint",
+    "eslint-plugin-n",
+    "eslint-plugin-prettier",
+    "prettier",
+    "globals",
+    "eslint-plugin-jsonc",
+    "@typescript-eslint/eslint-plugin",
+    "@typescript-eslint/parser",
+    "eslint-plugin-vue",
+    "eslint-plugin-react",
+    "@eslint/js",
+    "@eslint/eslintrc",
+    "markdownlint-cli",
+    "textlint",
+    "textlint-filter-rule-allowlist",
+    "textlint-filter-rule-comments",
+    "textlint-rule-terminology"
+  ],
+  "apk": [
+    "bash",
+    "ca-certificates",
+    "coreutils",
+    "curl",
+    "file",
+    "git",
+    "git-lfs",
+    "jq",
+    "libxml2-utils",
+    "openssh-client",
+    "parallel",
+    "perl",
+    "nodejs-current"
+  ],
+  "extras": {
+    "apk": [],
+    "npm": [],
+    "pip": [],
+    "check": []
+  }
+}

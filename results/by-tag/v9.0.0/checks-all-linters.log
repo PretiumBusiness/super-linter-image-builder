@@ -1,0 +1,86 @@
+ok: ansible-lint --version
+ok: pwsh -NoProfile -Command 'Import-Module /usr/lib/microsoft/arm-ttk/arm-ttk.psd1'
+ok: shellcheck --version
+ok: test -x /usr/bin/bash-exec
+ok: biome --version
+ok: checkov --version
+ok: helm version --short
+ok: clang-format --version
+ok: clj-kondo --version
+ok: cfn-lint --version
+ok: coffeelint --version
+ok: cpplint --version
+ok: dotnet --version
+ok: stylelint --config /action/lib/.automation/stylelint.config.mjs /tmp/fx/t.css
+ok: prettier --check /tmp/fx/t.css
+ok: dart --version
+ok: hadolint --version
+ok: editorconfig-checker --version
+ok: dotenv-linter --version
+ok: actionlint -version
+ok: zizmor --version
+ok: gitleaks version
+ok: commitlint --version
+ok: test -x /usr/bin/git-merge-conflict-markers
+ok: golangci-lint --version
+ok: go version
+ok: java -jar /usr/bin/google-java-format --version
+ok: goreleaser --version
+ok: prettier --version
+ok: npm-groovy-lint --version
+ok: htmlhint --config /action/lib/.automation/.htmlhintrc /tmp/fx/t.html
+ok: prettier --check /tmp/fx/t.html
+ok: java -jar /usr/bin/checkstyle --version
+ok: eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.js
+ok: prettier --check /tmp/fx/t.js
+ok: jscpd --version
+ok: eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.json
+ok: prettier --check /tmp/fx/t.json
+ok: ktlint --version
+ok: kubeconform -v
+ok: chktex --version
+FAIL (0): luacheck --version
+    Luacheck: 1.2.0
+    Lua: PUC-Rio Lua 5.4
+    Argparse: 0.7.2
+    LuaFileSystem: 1.9.0
+    LuaLanes: Not found
+ok: markdownlint -c /action/lib/.automation/.markdown-lint.yml /tmp/fx/t.md
+ok: prettier --check /tmp/fx/t.md
+ok: textlint -c /action/lib/.automation/.textlintrc /tmp/fx/t.md
+ok: spectral --version
+ok: perlcritic --version
+ok: php --version
+ok: phpcs --version
+ok: phpstan --version
+ok: psalm --version
+ok: pwsh -NoProfile -Command 'Get-Module -ListAvailable PSScriptAnalyzer | Select-Object -First 1 | ForEach-Object { $_.Version.ToString() }'
+ok: pre-commit --version
+ok: protolint version
+ok: black --version
+ok: flake8 --version
+ok: isort --version
+ok: mypy --version
+ok: pylint --version
+ok: ruff --version
+ok: R --slave -e 'library(lintr)'
+ok: renovate-config-validator --help
+ok: rubocop --version
+ok: rustfmt --version
+ok: cargo clippy --version
+ok: scalafmt --version
+ok: shfmt --version
+ok: snakemake --version
+ok: snakefmt --version
+ok: codespell --version
+ok: sqlfluff --version
+ok: asl-validator --help
+ok: terraform version
+ok: tflint --version
+ok: terragrunt --version
+ok: trivy --version
+ok: eslint -c /action/lib/.automation/eslint.config.mjs /tmp/fx/t.ts
+ok: prettier --check /tmp/fx/t.ts
+ok: xmllint --version
+ok: yamllint -c /action/lib/.automation/.yaml-lint.yml /tmp/fx/t.yml
+ok: prettier --check /tmp/fx/t.yml
