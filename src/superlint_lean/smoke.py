@@ -144,13 +144,18 @@ def clear_directory(image: str, work: Path) -> None:
     shutil.rmtree(work, ignore_errors=True)
 
 
+def add_editorconfig(upstream: Path, repo: Path, flag: str) -> None:
+    """The EDITORCONFIG linter needs the upstream .editorconfig next to the fixtures."""
+    if flag == "EDITORCONFIG":
+        shutil.copy2(upstream / ".editorconfig", repo / ".editorconfig")
+
+
 def result(image: str, flag: str, kind: str, source: Path, upstream: Path, work: Path) -> str:
     """pass, fail, not-linted, or no-files when the fixtures have no `kind` file."""
     repo = work / f"{flag}-{kind}"
     if copy_fixtures(source, kind, destination(repo, flag)) == 0:
         return NO_FILES
-    if flag == "EDITORCONFIG":
-        shutil.copy2(upstream / ".editorconfig", repo / ".editorconfig")
+    add_editorconfig(upstream, repo, flag)
     init_repository(repo)
     run_image(image, repo, [flag])
     summary = repo / SUMMARY
@@ -168,6 +173,7 @@ def skipped(image: str, enabled: Sequence[str], mapped: Sequence[str], upstream:
     probe = next((flag for flag in enabled if fixture_dir(upstream, flag).is_dir()), "")
     if probe:
         copy_fixtures(fixture_dir(upstream, probe), "good", destination(repo, probe))
+        add_editorconfig(upstream, repo, probe)
     init_repository(repo)
     run_image(image, repo, enabled)
     summary = repo / SUMMARY

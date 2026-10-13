@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +18,9 @@ TEST_SLIM_IMAGE = f"ghcr.io/super-linter/super-linter:slim-{UPSTREAM_TAG}"
 TEST_EXTRA_NPM = "left-pad@1.3.0"
 TEST_EXTRA_PIP = "yq==3.4.3"
 TEST_EXTRA_CHECK = "tree --version"
+TEST_SHELL_NOT_FOUND = "echo 'sh: tool: not found'"
+TEST_TOOL_PRINTING_NOT_FOUND_IN_TITLE_CASE = "echo 'LuaLanes: Not found'"
+TEST_MISSING_LIBRARY = "echo 'error while loading shared libraries: libx.so'"
 
 
 def generate_arguments(out: Path, upstream_dockerfile: Path, *args: str) -> list[str]:
@@ -35,6 +40,31 @@ def yaml_env(tmp_path: Path) -> Path:
     path = tmp_path / "yaml.env"
     path.write_text(f"{ENV_YAML}={ENV_TRUE}\nVALIDATE_ALL_CODEBASE={ENV_TRUE}\n")
     return path
+
+
+def run_check(command: str) -> str:
+    """Run the generated `run_check` function on `command` in bash and return what it printed."""
+    bash = shutil.which("bash") or "bash"
+    script = f'{generate.CHECK_FUNC}\nrun_check "$1"\n'
+    completed = subprocess.run([bash, "-c", script, "check", command], capture_output=True, text=True, check=True)
+    return completed.stdout
+
+
+class TestCheckFunction:
+    def test_run_check_should_fail_when_the_shell_reports_a_missing_tool(self) -> None:
+        printed = run_check(TEST_SHELL_NOT_FOUND)
+
+        assert printed.startswith("FAIL (0)")
+
+    def test_run_check_should_fail_when_a_shared_library_cannot_be_loaded(self) -> None:
+        printed = run_check(TEST_MISSING_LIBRARY)
+
+        assert printed.startswith("FAIL (0)")
+
+    def test_run_check_should_pass_when_a_working_tool_prints_not_found_in_title_case(self) -> None:
+        printed = run_check(TEST_TOOL_PRINTING_NOT_FOUND_IN_TITLE_CASE)
+
+        assert printed.startswith("ok:")
 
 
 class TestGenerateOutputs:
