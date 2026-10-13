@@ -9,6 +9,9 @@ import pytest
 
 from superlint_lean import __version__, cli
 
+TEST_UNKNOWN_COMMAND = "frobnicate"
+TEST_USAGE_HEADER = "usage: superlint-lean"
+
 
 class TestMain:
     def test_main_should_print_usage_and_return_zero_when_no_arguments_are_given(
@@ -17,18 +20,29 @@ class TestMain:
         code = cli.main([])
 
         output = capsys.readouterr().out
+        listed_commands = [command for command in cli.COMMANDS if command in output]
         assert code == 0
-        for command in cli.COMMANDS:
-            assert command in output
+        assert listed_commands == list(cli.COMMANDS)
 
-    @pytest.mark.parametrize("flag", ["-h", "--help", "help"])
-    def test_main_should_print_usage_when_a_help_flag_is_given(
-        self, flag: str, capsys: pytest.CaptureFixture[str]
+    def test_main_should_print_usage_when_the_short_help_flag_is_given(
+        self, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        code = cli.main([flag])
+        code = cli.main(["-h"])
 
         assert code == 0
-        assert "usage: superlint-lean" in capsys.readouterr().out
+        assert TEST_USAGE_HEADER in capsys.readouterr().out
+
+    def test_main_should_print_usage_when_the_long_help_flag_is_given(self, capsys: pytest.CaptureFixture[str]) -> None:
+        code = cli.main(["--help"])
+
+        assert code == 0
+        assert TEST_USAGE_HEADER in capsys.readouterr().out
+
+    def test_main_should_print_usage_when_the_help_word_is_given(self, capsys: pytest.CaptureFixture[str]) -> None:
+        code = cli.main(["help"])
+
+        assert code == 0
+        assert TEST_USAGE_HEADER in capsys.readouterr().out
 
     def test_main_should_print_the_version_when_version_flag_is_given(self, capsys: pytest.CaptureFixture[str]) -> None:
         code = cli.main(["--version"])
@@ -37,10 +51,10 @@ class TestMain:
         assert capsys.readouterr().out.strip() == f"superlint-lean {__version__}"
 
     def test_main_should_return_two_when_the_command_is_unknown(self, capsys: pytest.CaptureFixture[str]) -> None:
-        code = cli.main(["frobnicate"])
+        code = cli.main([TEST_UNKNOWN_COMMAND])
 
         assert code == 2
-        assert "unknown command 'frobnicate'" in capsys.readouterr().err
+        assert f"unknown command '{TEST_UNKNOWN_COMMAND}'" in capsys.readouterr().err
 
     def test_main_should_dispatch_to_the_command_when_it_is_known(self, capsys: pytest.CaptureFixture[str]) -> None:
         code = cli.main(["drift", "--base", "origin/main"])

@@ -119,11 +119,36 @@ class TestMain:
         assert sent_calls == 4
         assert "gh api failed with exit code 1" in output
 
-    @pytest.mark.parametrize("repository", ["noslash", "a/b/c", "owner/", "/repo", "o wner/repo"])
-    def test_main_should_return_two_when_the_repository_is_not_owner_slash_repo(
-        self, repository: str, capsys: pytest.CaptureFixture[str]
+    def test_main_should_return_two_when_the_repository_has_no_slash(self, capsys: pytest.CaptureFixture[str]) -> None:
+        code = repository_settings.main(["noslash"])
+
+        assert code == 2
+        assert "expected OWNER/REPO" in capsys.readouterr().out
+
+    def test_main_should_return_two_when_the_repository_has_two_slashes(
+        self, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        code = repository_settings.main([repository])
+        code = repository_settings.main(["a/b/c"])
+
+        assert code == 2
+        assert "expected OWNER/REPO" in capsys.readouterr().out
+
+    def test_main_should_return_two_when_the_repository_name_is_empty(self, capsys: pytest.CaptureFixture[str]) -> None:
+        code = repository_settings.main(["owner/"])
+
+        assert code == 2
+        assert "expected OWNER/REPO" in capsys.readouterr().out
+
+    def test_main_should_return_two_when_the_owner_is_empty(self, capsys: pytest.CaptureFixture[str]) -> None:
+        code = repository_settings.main(["/repo"])
+
+        assert code == 2
+        assert "expected OWNER/REPO" in capsys.readouterr().out
+
+    def test_main_should_return_two_when_the_repository_contains_a_space(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        code = repository_settings.main(["o wner/repo"])
 
         assert code == 2
         assert "expected OWNER/REPO" in capsys.readouterr().out

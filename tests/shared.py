@@ -11,6 +11,12 @@ DATA_DIR = ROOT / "src" / "superlint_lean" / "data"
 WORKFLOW_FIXTURE = ROOT / "tests" / "fixtures" / "ghwm-workflow.yml"
 
 UPSTREAM_TAG = "v9.0.0"
+FLAG_YAML = "YAML"
+FLAG_JSON = "JSON"
+ENV_YAML = "VALIDATE_YAML"
+ENV_JSON = "VALIDATE_JSON"
+ENV_TRUE = "true"
+ENV_FALSE = "false"
 PYTHON_BASE = "python:3.13-alpine3.22"
 UPSTREAM_DOCKERFILE_TEXT = f"FROM {PYTHON_BASE} AS python-base\n"
 

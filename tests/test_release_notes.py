@@ -10,6 +10,10 @@ import pytest
 from superlint_lean import release_notes
 from tests.shared import bench_row, write_jsonl
 
+TEST_OLD_TAG = "v1"
+TEST_NEW_TAG = "v2"
+TEST_PROFILE = "p"
+
 
 def run_notes(
     tmp_path: Path,
@@ -24,15 +28,15 @@ def run_notes(
     release_notes.main(
         [
             "--old-tag",
-            "v1",
+            TEST_OLD_TAG,
             "--old-dir",
             str(tmp_path / "old"),
             "--new-tag",
-            "v2",
+            TEST_NEW_TAG,
             "--new-dir",
             str(tmp_path / "new"),
             "--profiles",
-            "p",
+            TEST_PROFILE,
             *(extra_args or []),
         ]
     )
@@ -99,7 +103,7 @@ class TestReleaseNotes:
 
         run_notes(tmp_path, capsys, [bench_row("lean-gzip", 10.0)], [bench_row("lean-gzip", 9.0)], ["--out", str(out)])
 
-        assert out.read_text().startswith("## Upstream Super-Linter v1 to v2")
+        assert out.read_text().startswith(f"## Upstream Super-Linter {TEST_OLD_TAG} to {TEST_NEW_TAG}")
 
     def test_release_notes_should_list_profiles_without_old_results_when_they_are_new(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
@@ -113,14 +117,14 @@ class TestReleaseNotes:
         release_notes.main(
             [
                 "--old-tag",
-                "v1",
+                TEST_OLD_TAG,
                 "--old-dir",
                 str(tmp_path / "old"),
                 "--new-tag",
-                "v2",
+                TEST_NEW_TAG,
                 "--new-dir",
                 str(tmp_path / "new"),
             ]
         )
 
-        assert "Not compared (no results for v1): q." in capsys.readouterr().out
+        assert f"Not compared (no results for {TEST_OLD_TAG}): q." in capsys.readouterr().out

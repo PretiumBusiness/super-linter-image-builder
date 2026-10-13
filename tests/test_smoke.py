@@ -57,17 +57,15 @@ def fake_docker(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, Path]]:
 
 
 class TestVerdict:
-    @pytest.mark.parametrize(
-        ("summary", "expected"),
-        [(TEST_SUMMARY_PASS, smoke.CLEAN), (TEST_SUMMARY_FAIL, smoke.ERRORS)],
-        ids=["pass", "fail"],
-    )
-    def test_verdict_should_return_the_outcome_of_the_row_when_the_flag_is_in_the_summary(
-        self, summary: str, expected: str
-    ) -> None:
-        outcome = smoke.verdict(summary, TEST_FLAG)
+    def test_verdict_should_return_clean_when_the_summary_row_says_pass(self) -> None:
+        outcome = smoke.verdict(TEST_SUMMARY_PASS, TEST_FLAG)
 
-        assert outcome == expected
+        assert outcome == smoke.CLEAN
+
+    def test_verdict_should_return_errors_when_the_summary_row_says_fail(self) -> None:
+        outcome = smoke.verdict(TEST_SUMMARY_FAIL, TEST_FLAG)
+
+        assert outcome == smoke.ERRORS
 
     def test_verdict_should_return_not_linted_when_the_flag_is_not_in_the_summary(self) -> None:
         outcome = smoke.verdict(TEST_SUMMARY_PASS, "JSON")
@@ -108,11 +106,15 @@ class TestCopyFixtures:
 
 
 class TestDestination:
-    @pytest.mark.parametrize("flag", ["GITHUB_ACTIONS", "GITHUB_ACTIONS_ZIZMOR"])
-    def test_destination_should_use_the_workflows_directory_when_the_flag_lints_workflows(
-        self, flag: str, tmp_path: Path
+    def test_destination_should_use_the_workflows_directory_when_the_flag_is_github_actions(
+        self, tmp_path: Path
     ) -> None:
-        destination = smoke.destination(tmp_path, flag)
+        destination = smoke.destination(tmp_path, "GITHUB_ACTIONS")
+
+        assert destination == tmp_path / ".github" / "workflows"
+
+    def test_destination_should_use_the_workflows_directory_when_the_flag_is_zizmor(self, tmp_path: Path) -> None:
+        destination = smoke.destination(tmp_path, "GITHUB_ACTIONS_ZIZMOR")
 
         assert destination == tmp_path / ".github" / "workflows"
 

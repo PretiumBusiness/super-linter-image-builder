@@ -45,29 +45,57 @@ def first_cells(lines: list[str]) -> list[str]:
 
 
 class TestRoundHalfAway:
-    @pytest.mark.parametrize(
-        ("value", "expected"),
-        [(0.5, 1.0), (1.5, 2.0), (2.5, 3.0), (-0.5, -1.0), (-2.4, -2.0), (0.4, 0.0)],
-    )
-    def test_round_half_away_should_round_halves_away_from_zero_when_the_value_is_a_half(
-        self, value: float, expected: float
-    ) -> None:
-        rounded = report.round_half_away(value)
+    def test_round_half_away_should_round_up_when_a_positive_value_is_exactly_a_half(self) -> None:
+        rounded = report.round_half_away(0.5)
 
-        assert rounded == expected
+        assert rounded == 1.0
+
+    def test_round_half_away_should_round_up_when_the_half_follows_an_even_whole_number(self) -> None:
+        rounded = report.round_half_away(2.5)
+
+        assert rounded == 3.0
+
+    def test_round_half_away_should_round_down_when_a_negative_value_is_exactly_a_half(self) -> None:
+        rounded = report.round_half_away(-0.5)
+
+        assert rounded == -1.0
+
+    def test_round_half_away_should_round_to_zero_when_a_positive_value_is_below_a_half(self) -> None:
+        rounded = report.round_half_away(0.4)
+
+        assert rounded == 0.0
+
+    def test_round_half_away_should_round_toward_zero_when_a_negative_value_is_below_a_half(self) -> None:
+        rounded = report.round_half_away(-2.4)
+
+        assert rounded == -2.0
 
 
 class TestNumber:
-    @pytest.mark.parametrize(
-        ("value", "expected"),
-        [(70.0, "70"), (65.5, "65.5"), (0.0, "0"), (-0.0, "-0"), (-3.0, "-3")],
-    )
-    def test_number_should_print_like_jq_when_the_value_is_whole_or_negative_zero(
-        self, value: float, expected: str
-    ) -> None:
-        text = report.number(value)
+    def test_number_should_drop_the_decimal_point_when_the_value_is_whole(self) -> None:
+        text = report.number(70.0)
 
-        assert text == expected
+        assert text == "70"
+
+    def test_number_should_keep_the_decimals_when_the_value_is_fractional(self) -> None:
+        text = report.number(65.5)
+
+        assert text == "65.5"
+
+    def test_number_should_print_zero_when_the_value_is_zero(self) -> None:
+        text = report.number(0.0)
+
+        assert text == "0"
+
+    def test_number_should_print_negative_zero_when_the_value_is_negative_zero(self) -> None:
+        text = report.number(-0.0)
+
+        assert text == "-0"
+
+    def test_number_should_print_a_negative_whole_number_when_the_value_is_below_zero(self) -> None:
+        text = report.number(-3.0)
+
+        assert text == "-3"
 
 
 class TestMedian:
@@ -88,11 +116,15 @@ class TestMedian:
 
 
 class TestSeconds:
-    @pytest.mark.parametrize(("value", "expected"), [(65.46, "65.5 s"), (70.0, "70 s")])
-    def test_seconds_should_print_one_decimal_when_the_value_is_a_number(self, value: float, expected: str) -> None:
-        text = report.seconds(value)
+    def test_seconds_should_round_to_one_decimal_when_the_value_has_more_decimals(self) -> None:
+        text = report.seconds(65.46)
 
-        assert text == expected
+        assert text == "65.5 s"
+
+    def test_seconds_should_drop_the_decimal_point_when_the_value_is_whole(self) -> None:
+        text = report.seconds(70.0)
+
+        assert text == "70 s"
 
     def test_seconds_should_print_na_when_the_value_is_missing(self) -> None:
         text = report.seconds(None)
@@ -101,11 +133,18 @@ class TestSeconds:
 
 
 class TestPercentSaved:
-    @pytest.mark.parametrize(("before", "after"), [(None, 5), (0, 5), (1000, None)])
-    def test_percent_saved_should_be_na_when_a_size_is_missing_or_the_baseline_is_zero(
-        self, before: int | None, after: int | None
-    ) -> None:
-        text = report.percent_saved(before, after)
+    def test_percent_saved_should_be_na_when_the_baseline_is_missing(self) -> None:
+        text = report.percent_saved(None, 5)
+
+        assert text == "n/a"
+
+    def test_percent_saved_should_be_na_when_the_baseline_is_zero(self) -> None:
+        text = report.percent_saved(0, 5)
+
+        assert text == "n/a"
+
+    def test_percent_saved_should_be_na_when_the_lean_size_is_missing(self) -> None:
+        text = report.percent_saved(1000, None)
 
         assert text == "n/a"
 
@@ -116,17 +155,20 @@ class TestPercentSaved:
 
 
 class TestDrift:
-    @pytest.mark.parametrize(
-        ("first", "last", "expected"),
-        [(100.0, 120.0, "WARN 20%"), (100.0, 110.0, "10%"), (1000.0, 999.0, "-0%")],
-        ids=["above-fifteen", "below-fifteen", "tiny-decrease"],
-    )
-    def test_drift_should_warn_only_above_fifteen_percent_when_the_baseline_moves(
-        self, first: float, last: float, expected: str
-    ) -> None:
-        text = report.drift(first, last)
+    def test_drift_should_warn_when_the_change_is_above_fifteen_percent(self) -> None:
+        text = report.drift(100.0, 120.0)
 
-        assert text == expected
+        assert text == "WARN 20%"
+
+    def test_drift_should_not_warn_when_the_change_is_below_fifteen_percent(self) -> None:
+        text = report.drift(100.0, 110.0)
+
+        assert text == "10%"
+
+    def test_drift_should_print_negative_zero_when_the_change_is_a_tiny_decrease(self) -> None:
+        text = report.drift(1000.0, 999.0)
+
+        assert text == "-0%"
 
     def test_drift_should_be_na_when_a_reading_is_missing(self) -> None:
         text = report.drift(None, 100.0)
@@ -140,13 +182,15 @@ class TestRatio:
 
         assert text == "n/a"
 
-    @pytest.mark.parametrize(("numerator", "denominator", "expected"), [(70.0, 10.0, "7x"), (70.0, 9.0, "7.8x")])
-    def test_ratio_should_print_one_decimal_when_both_values_are_known(
-        self, numerator: float, denominator: float, expected: str
-    ) -> None:
-        text = report.ratio(numerator, denominator)
+    def test_ratio_should_drop_the_decimal_point_when_the_result_is_whole(self) -> None:
+        text = report.ratio(70.0, 10.0)
 
-        assert text == expected
+        assert text == "7x"
+
+    def test_ratio_should_print_one_decimal_when_the_result_is_fractional(self) -> None:
+        text = report.ratio(70.0, 9.0)
+
+        assert text == "7.8x"
 
 
 class TestCompare:
@@ -277,11 +321,18 @@ class TestMain:
         assert code == 2
         assert "cannot read the results" in capsys.readouterr().out
 
-    @pytest.mark.parametrize("command", ["compare", "summarize"])
-    def test_cli_should_dispatch_the_report_command_when_it_is_given(self, command: str, tmp_path: Path) -> None:
+    def test_cli_should_dispatch_compare_when_the_command_is_given(self, tmp_path: Path) -> None:
         path = tmp_path / "bench.jsonl"
         write_jsonl(path, [sizes(TEST_BASELINE, 70.0, 4000, 1300)])
 
-        code = cli.main([command, str(path)])
+        code = cli.main(["compare", str(path)])
+
+        assert code == 0
+
+    def test_cli_should_dispatch_summarize_when_the_command_is_given(self, tmp_path: Path) -> None:
+        path = tmp_path / "bench.jsonl"
+        write_jsonl(path, [sizes(TEST_BASELINE, 70.0, 4000, 1300)])
+
+        code = cli.main(["summarize", str(path)])
 
         assert code == 0
