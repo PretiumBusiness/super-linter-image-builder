@@ -170,7 +170,7 @@ Prints a Markdown table with one row per flag. A flag passes when the good files
 in the Super-Linter summary; a linter that found no files counts as a failure. Flags without a fixture
 directory are reported, not failed. Files in a fixture directory that are neither good nor bad (a `package-info.java`,
 an `.editorconfig`, a `.sqlfluff`) are support files and go into both runs; the few upstream files that a linter reads
-(`.editorconfig` for ktlint and dotnet format, the clj-kondo and eslint config in `.github/linters`) are copied first, so a
+(`.editorconfig` for ktlint and dotnet format, the clj-kondo and ESLint config in `.github/linters`) are copied first, so a
 fixture can override them. A few fixtures do not behave on upstream's own image either (the good Checkov and biome
 format files, the bad pre-commit file); they are listed as skipped.
 
