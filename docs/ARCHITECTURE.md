@@ -46,12 +46,13 @@ flowchart LR
 
 | Module | Responsibility |
 | :--- | :--- |
-| `cli.py` | Dispatches `generate`, `drift`, `sync-mapping` and `release-notes`; prints usage and the version. |
+| `cli.py` | Dispatches `generate`, `drift`, `sync-mapping`, `release-notes` and `smoke`; prints usage and the version. |
 | `config.py` | Parses env files and workflows; `effective_flags` implements the upstream `VALIDATE_*` rules. |
 | `generate.py` | Turns the selected flags plus `data/linters.json` into `Dockerfile`, `checks.sh`, `plan.json`. |
 | `drift.py` | Maps changed files to flags with `data/filetypes.json` and reports files no enabled linter covers. |
 | `mapping_sync.py` | Reads an upstream checkout and adds draft entries to `linters.json` for new flags. |
 | `release_notes.py` | Compares `bench-*.jsonl` results of two upstream versions into Markdown release notes. |
+| `smoke.py` | Runs a built image on upstream's good and bad fixtures, one linter at a time, and reports the outcome. |
 
 ## Data
 
@@ -70,7 +71,7 @@ flowchart LR
 | `upstream-sync.yaml` | Detects a newer upstream release (at least `UPSTREAM_COOLDOWN_DAYS` old, repository variable, default 0); only then syncs the mapping and opens a bump pull request. |
 | `release.yaml` | On a bump of the pin: benchmarks old and new versions and publishes a release. |
 | `profiles.yaml` | Reusable benchmark per stack profile. |
-| `self-image.yaml` | Builds this repository's own lean Super-Linter image from `.github/super-linter.env` smoke-tests it (`scripts/smoke.sh`) and pushes it to GHCR (`ghcr.io/<owner>/<repo>/lint`). |
+| `self-image.yaml` | Builds this repository's own lean Super-Linter image from `.github/super-linter.env` smoke-tests it (`superlint-lean smoke`) and pushes it to GHCR (`ghcr.io/<owner>/<repo>/lint`). |
 | `drift-blocker.yml` | Reusable workflow other repositories call to run `drift`. |
 
 ## Managed workflows
@@ -91,7 +92,7 @@ repository.
 
 ## Smoke test
 
-`scripts/smoke.sh <image> <plan.json> <upstream-dir>` checks that a built image still lints. For every flag in
+`superlint-lean smoke <image> <plan.json> <upstream-dir>` checks that a built image still lints. For every flag in
 `plan.json` it runs the image with only that linter enabled, once on the good files and once on the bad files
 of Super-Linter's `test/linters/<flag>` fixtures, taken from a checkout at the pinned tag (MIT licensed, so
 they are read, not copied). The verdict comes from the Super-Linter summary, so a linter that found no files

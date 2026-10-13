@@ -77,6 +77,8 @@ ignore = ["E501"]
 [tool.ruff.lint.per-file-ignores]
 # drift shells out to git with a fixed argument list
 "src/superlint_lean/drift.py" = ["S603", "S607"]
+# smoke runs git and docker with fixed argument lists
+"src/superlint_lean/smoke.py" = ["S603", "S607"]
 "tests/*" = ["S101", "S105", "S106", "S108", "S603"]
 
 [tool.mypy]

@@ -94,7 +94,7 @@ jobs:
         run: |
           docker buildx build build --provenance=false --sbom=false --load --tag smoke:candidate
           status=0
-          scripts/smoke.sh smoke:candidate build/plan.json upstream > smoke.md || status=$?
+          uv run superlint-lean smoke smoke:candidate build/plan.json upstream > smoke.md || status=$?
           cat smoke.md
           { echo "### Smoke test"; echo; cat smoke.md; } >> "${GITHUB_STEP_SUMMARY}"
           exit "${status}"

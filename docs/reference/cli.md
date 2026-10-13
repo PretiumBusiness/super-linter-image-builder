@@ -67,3 +67,23 @@ Write release notes comparing the benchmarks of two upstream versions.
 | `--profiles A,B` | Limit the comparison to these profiles. |
 | `--mapping-diff FILE` | Append the mapping changes between the versions. |
 | `--out FILE` | Also write the notes to a file. |
+
+## `smoke`
+
+Lint upstream's good and bad fixtures with a built image, one linter at a time.
+
+```text
+superlint-lean smoke <image> <plan.json> <upstream-dir>
+```
+
+| Argument | Description |
+| :--- | :--- |
+| `image` | The image to test, for example the one built from `generate`'s output. |
+| `plan.json` | Written by `generate`; its `flags` list says which linters to test. |
+| `upstream-dir` | A Super-Linter checkout at the tag the image was built from (only `test/linters` and `.editorconfig` are read). |
+
+Prints a Markdown table with one row per flag. A flag passes when the good files pass and the bad files fail
+in the Super-Linter summary; a linter that found no files counts as a failure. Flags without a fixture
+directory are reported, not failed.
+
+Exit codes: `0` every flag behaved, `1` at least one did not, `2` the plan could not be read.
