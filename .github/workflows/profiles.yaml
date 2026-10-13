@@ -204,10 +204,9 @@ jobs:
         run: |
           out="bench-${PROFILE}.jsonl"
           rm -f "$out"
-          export BENCH_OUT="$out"
           measure() { # image kind mode
-            BENCH_MODE="$3" scripts/bench-pull.sh "$1" "$RUNS" "${PROFILE}/$2" "$RUNNER_ENVIRONMENT" \
-              || echo "::warning::benchmark failed: $2 ($3)"
+            uv run --no-dev superlint-lean bench "$1" "$RUNS" "${PROFILE}/$2" "$RUNNER_ENVIRONMENT" \
+              --mode "$3" --out "$out" || echo "::warning::benchmark failed: $2 ($3)"
           }
           for mode in cold warm; do
             measure "$BASELINE_IMAGE" baseline "$mode"

@@ -71,7 +71,7 @@ users will see.
 
 - `/action/linterVersions.txt` lists all upstream tools, not only the kept ones.
 - The self-hosted zstd numbers below come from a run before the cold-pull
-  cleanup of `scripts/bench-pull.sh`. Within that run the zstd pull followed the
+  cleanup of `superlint-lean bench`. Within that run the zstd pull followed the
   gzip pull of the same image, so they may be too low.
 
 ## What the benchmark covers
@@ -127,7 +127,7 @@ What to take from it:
 
 An earlier hosted run (38284154555) reported zstd cold pulls of 0.2 s to 0.7 s.
 That was a measurement error: the zstd pull reused the layers of the gzip image
-still on the runner. It is fixed in `scripts/bench-pull.sh` and those numbers
+still on the runner. It is fixed in `superlint-lean bench` and those numbers
 were replaced by this run.
 
 ### Self-hosted runner (secondary)

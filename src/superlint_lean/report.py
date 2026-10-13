@@ -4,7 +4,7 @@ Usage:
     superlint-lean compare   FILE.jsonl...   lean images against their upstream baseline, per profile
     superlint-lean summarize FILE.jsonl...   every variant on its own, median of the runs
 
-Each line is one run written by ``scripts/bench-pull.sh`` (or the build timing in
+Each line is one run written by ``superlint-lean bench`` (or the build timing in
 ``profiles.yaml``). ``variant`` is ``<profile>/<kind>`` with kind ``baseline``,
 ``baseline-end``, ``lean-gzip`` or ``lean-zstd``; ``mode`` is ``cold``, ``warm`` or
 ``build`` (missing means ``cold``).

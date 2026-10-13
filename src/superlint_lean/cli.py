@@ -5,13 +5,24 @@ from __future__ import annotations
 import sys
 from collections.abc import Callable, Sequence
 
-from superlint_lean import __version__, drift, generate, mapping_sync, release_notes, report, repository_settings, smoke
+from superlint_lean import (
+    __version__,
+    bench,
+    drift,
+    generate,
+    mapping_sync,
+    release_notes,
+    report,
+    repository_settings,
+    smoke,
+)
 
 COMMANDS: dict[str, tuple[Callable[[Sequence[str] | None], int | None], str]] = {
     "generate": (generate.main, "Generate a lean image build context from VALIDATE_* flags."),
     "drift": (drift.main, "Fail when changed files are not covered by the configured linters."),
     "sync-mapping": (mapping_sync.main, "Compare the linter mapping with an upstream checkout and add drafts."),
     "release-notes": (release_notes.main, "Write release notes comparing benchmarks of two upstream versions."),
+    "bench": (bench.main, "Time cold or warm pulls and container start of an image."),
     "compare": (report.main_compare, "Compare lean images with their upstream baseline from benchmark results."),
     "summarize": (report.main_summarize, "Summarize benchmark results, one row per variant."),
     "repository-settings": (repository_settings.main, "Print or apply the repository settings (maintainers)."),
