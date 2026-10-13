@@ -23,8 +23,12 @@ name: Upstream sync
 # detect and coverage run on GitHub-hosted runners (coverage also runs for pull
 # requests, which must never run on the self-hosted runner). sync needs docker
 # with buildx, uv (installed by the workflow), jq, git and gh (a GitHub-hosted runner has them all).
-# Opening the pull request needs the repository setting "Allow GitHub Actions to
-# create and approve pull requests". Without it the branch is still pushed.
+# The pull request is opened with the SYNC_PR_TOKEN secret (a fine-grained token
+# with "Pull requests: write" on this repository), not with the workflow token.
+# That keeps "Allow GitHub Actions to create and approve pull requests" off, and
+# a pull request opened this way also starts the tests and the lint. Without the
+# secret the workflow token is tried, which fails while that setting is off; the
+# branch is still pushed.
 
 on:
   schedule:
@@ -203,6 +207,8 @@ jobs:
             lean-all:check /checks.sh 2>&1 | tee checks-all.log
 
       - name: Open a pull request
+        env:
+          PR_TOKEN: ${{ secrets.SYNC_PR_TOKEN }}
         run: |
           echo "$TAG" > upstream-version.txt
           branch="sync/upstream-${TAG}"
@@ -210,7 +216,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -q -B "$branch"
           git add upstream-version.txt src/superlint_lean/data/linters.json
-          git commit -q -m "Sync mapping with upstream ${TAG}"
+          git commit -q -m "chore: sync mapping with upstream ${TAG}"
           # the checkout keeps no credentials; give git the token for this push only
           auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
           echo "::add-mask::${auth}"
@@ -235,6 +241,9 @@ jobs:
             echo
             echo "Draft entries are verified only by their tool check. Review them before merging."
           } > pr-body.md
-          gh pr create --base main --head "$branch" \
-            --title "Sync mapping with upstream ${TAG}" --body-file pr-body.md \
+          if [ -z "${PR_TOKEN}" ]; then
+            echo "::warning::SYNC_PR_TOKEN is not set; opening the pull request with the workflow token."
+          fi
+          GH_TOKEN="${PR_TOKEN:-$GH_TOKEN}" gh pr create --base main --head "$branch" \
+            --title "chore: sync mapping with upstream ${TAG}" --body-file pr-body.md \
             || echo "::warning::could not open a pull request. The branch $branch was pushed."
