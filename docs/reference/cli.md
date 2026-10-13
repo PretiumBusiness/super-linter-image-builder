@@ -129,6 +129,27 @@ ruleset (sent on stdin). A failing call is reported and the rest still run.
 
 Exit codes: `0` done, `1` a call failed, `2` the repository is not `OWNER/REPO`.
 
+## `select-upstream`
+
+Pick the upstream Super-Linter release to sync to.
+
+```text
+superlint-lean select-upstream --pinned-file upstream-version.txt [--force-tag TAG] [--cooldown-days N] [--repo OWNER/REPO]
+```
+
+| Option | Description |
+| :--- | :--- |
+| `--pinned-file FILE` | The file with the pinned upstream tag. |
+| `--force-tag TAG` | Use this tag, even if it is not the latest, and skip reading the releases. |
+| `--cooldown-days N` | Only consider releases at least `N` days old (default `0`). |
+| `--repo OWNER/REPO` | The upstream repository (default `super-linter/super-linter`). |
+
+Reads the releases with the `gh` CLI and takes the newest published one (no draft, no pre-release) that is old enough. A
+target that is not newer than the pinned version counts as current. Prints a summary line and, when `GITHUB_OUTPUT`
+is set, writes `pinned`, `latest` and `behind` (`true` or `false`) to it.
+
+Exit codes: `0` done, `2` a bad argument or the releases could not be read.
+
 ## `smoke`
 
 Lint upstream's good and bad fixtures with a built image, one linter at a time.

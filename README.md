@@ -51,6 +51,7 @@ Commands:
 | `superlint-lean compare`, `summarize` | Markdown tables from benchmark results: lean against baseline, and every variant on its own |
 | `superlint-lean repository-settings` | Print or apply the repository settings in `docs/repository-settings.md` (maintainers) |
 | `superlint-lean bench` | Time cold or warm pulls and container start of an image (the benchmark workflow) |
+| `superlint-lean select-upstream` | Pick the upstream release to sync to, honouring a cooldown |
 | `superlint-lean smoke` | Lint upstream's good and bad fixtures with a built image, one linter at a time |
 
 ## Layout

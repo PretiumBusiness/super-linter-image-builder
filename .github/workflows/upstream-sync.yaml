@@ -123,40 +123,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: upstream-version.txt
-          sparse-checkout-cone-mode: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
 
       - id: v
         env:
           FORCE_TAG: ${{ inputs.force_tag }}
           COOLDOWN_DAYS: ${{ inputs.cooldown_days || vars.UPSTREAM_COOLDOWN_DAYS || '0' }}
         run: |
-          pinned="$(tr -d '[:space:]' < upstream-version.txt)"
-          latest="$FORCE_TAG"
-          if [ -z "$latest" ] && [ "$COOLDOWN_DAYS" = "0" ]; then
-            latest="$(gh api repos/super-linter/super-linter/releases/latest --jq .tag_name)"
-          elif [ -z "$latest" ]; then
-            case "$COOLDOWN_DAYS" in *[!0-9]*) echo "::error::cooldown_days must be a whole number, got '$COOLDOWN_DAYS'"; exit 1 ;; esac
-            # The newest published release (no draft, no prerelease) that is old enough.
-            latest="$(gh api "repos/super-linter/super-linter/releases?per_page=50" --jq \
-              "[.[] | select(.draft == false and .prerelease == false)
-                    | select((.published_at | fromdateiso8601) <= (now - ${COOLDOWN_DAYS} * 86400))][0].tag_name // empty")"
-            echo "Cooldown ${COOLDOWN_DAYS} days: newest eligible upstream release is '${latest:-none}'." | tee -a "$GITHUB_STEP_SUMMARY"
-            latest="${latest:-$pinned}"
-          fi
-          newest="$(printf '%s\n%s\n' "$pinned" "$latest" | sort -V | tail -1)"
-          if [ "$latest" != "$pinned" ] && [ "$newest" = "$latest" ]; then
-            behind=true
-            echo "Pinned $pinned is behind upstream $latest. Running the sync." | tee -a "$GITHUB_STEP_SUMMARY"
-          else
-            behind=false
-            echo "Pinned $pinned is current (upstream $latest). Nothing to do." | tee -a "$GITHUB_STEP_SUMMARY"
-          fi
-          {
-            echo "pinned=$pinned"
-            echo "latest=$latest"
-            echo "behind=$behind"
-          } >> "$GITHUB_OUTPUT"
+          status=0
+          uv run --no-dev superlint-lean select-upstream --pinned-file upstream-version.txt \
+            --force-tag "$FORCE_TAG" --cooldown-days "$COOLDOWN_DAYS" > select.log || status=$?
+          tee -a "$GITHUB_STEP_SUMMARY" < select.log
+          exit "$status"
 
   sync:
     name: Sync to a newer upstream release
