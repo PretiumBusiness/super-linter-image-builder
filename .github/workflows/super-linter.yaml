@@ -32,7 +32,7 @@ env:
   SUPER_LINTER_VERSION: v9.0.0
   # true: run the lean image published by the super-linter-lean workflow, whose
   # tag is stored in the SUPER_LINTER_CUSTOM_IMAGE repository variable
-  SUPER_LINTER_CUSTOM: false
+  SUPER_LINTER_CUSTOM: true
 
 jobs:
   super-linter:
