@@ -39,12 +39,7 @@ ok: prettier --check /tmp/fx/t.json
 ok: ktlint --version
 ok: kubeconform -v
 ok: chktex --version
-FAIL (0): luacheck --version
-    Luacheck: 1.2.0
-    Lua: PUC-Rio Lua 5.4
-    Argparse: 0.7.2
-    LuaFileSystem: 1.9.0
-    LuaLanes: Not found
+ok: luacheck --version
 ok: markdownlint -c /action/lib/.automation/.markdown-lint.yml /tmp/fx/t.md
 ok: prettier --check /tmp/fx/t.md
 ok: textlint -c /action/lib/.automation/.textlintrc /tmp/fx/t.md
