@@ -68,6 +68,8 @@ runs:
         UPSTREAM_TAG: ${{ inputs.upstream-tag }}
         ENV_FILES: ${{ inputs.env-files }}
         UPSTREAM: ${{ steps.upstream.outputs.path }}
+        # the action is unpacked without .git, so hatch-vcs cannot read a version from tags
+        SETUPTOOLS_SCM_PRETEND_VERSION: 0.0.0
       run: |
         context="${RUNNER_TEMP}/superlint-lean-build"
         args=()
@@ -103,6 +105,7 @@ runs:
         IMAGE: ${{ inputs.image }}
         CONTEXT: ${{ steps.generate.outputs.context }}
         UPSTREAM: ${{ steps.upstream.outputs.path }}
+        SETUPTOOLS_SCM_PRETEND_VERSION: 0.0.0
       run: |
         status=0
         uv run --project "${GITHUB_ACTION_PATH}" superlint-lean smoke \
