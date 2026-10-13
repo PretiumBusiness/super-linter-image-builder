@@ -131,7 +131,10 @@ jobs:
           repository: super-linter/super-linter
           ref: ${{ inputs.upstream_tag }}
           path: upstream
-          sparse-checkout: Dockerfile
+          sparse-checkout: |
+            /Dockerfile
+            /.editorconfig
+            /test/linters/
           sparse-checkout-cone-mode: false
 
       - name: Install uv
@@ -196,6 +199,17 @@ jobs:
             grep -iE '^(FAIL|ERROR)|: (FAIL|not found)' "checks-${PROFILE}.log" | while read -r l; do echo "::error title=${PROFILE} tool check::$l"; done
             exit 1
           fi
+
+      - name: Smoke-test the lean image
+        run: |
+          status=0
+          uv run --no-dev superlint-lean smoke "${LEAN_BASE}:${TAG}-gzip" build/plan.json upstream > "smoke-${PROFILE}.md" || status=$?
+          {
+            echo "### Smoke test: ${PROFILE}"
+            echo
+            cat "smoke-${PROFILE}.md"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
 
       - name: Benchmark pulls
         if: always()

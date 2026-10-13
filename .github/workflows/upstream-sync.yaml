@@ -89,6 +89,7 @@ jobs:
           sparse-checkout: |
             lib
             dependencies
+            test/linters
 
       - name: Install uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
@@ -206,6 +207,19 @@ jobs:
           docker run --rm -v "$PWD/build-all/checks.sh:/checks.sh:ro" --entrypoint bash \
             lean-all:check /checks.sh 2>&1 | tee checks-all.log
 
+      - name: Smoke-test the image with every mapped linter
+        continue-on-error: true
+        timeout-minutes: 120
+        run: |
+          status=0
+          uv run superlint-lean smoke lean-all:check build-all/plan.json upstream > smoke-all.md || status=$?
+          {
+            echo "### Smoke test: every mapped linter on upstream's good and bad fixtures"
+            echo
+            cat smoke-all.md
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
       - name: Open a pull request
         env:
           PR_TOKEN: ${{ secrets.SYNC_PR_TOKEN }}
@@ -239,7 +253,18 @@ jobs:
               echo "The image did not build. See the workflow run."
             fi
             echo
-            echo "Draft entries are verified only by their tool check. Review them before merging."
+            echo "### Smoke test on an image with every mapped linter"
+            echo
+            if [ -f smoke-all.md ]; then
+              echo "Linters that did not lint the upstream fixtures correctly: $(grep -c 'FAIL' smoke-all.md || true)"
+              echo '```'
+              grep 'FAIL' smoke-all.md | head -60 || true
+              echo '```'
+            else
+              echo "The smoke test did not run. See the workflow run."
+            fi
+            echo
+            echo "Draft entries are verified only by their tool check and smoke test. Review them before merging."
           } > pr-body.md
           if [ -z "${PR_TOKEN}" ]; then
             echo "::warning::SYNC_PR_TOKEN is not set; opening the pull request with the workflow token."

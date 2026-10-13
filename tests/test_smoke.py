@@ -18,6 +18,8 @@ TEST_EDITORCONFIG = "root = true\n"
 TEST_SUMMARY_HEADER = "| Language | Validation result |\n| --- | --- |\n"
 TEST_SUMMARY_PASS = TEST_SUMMARY_HEADER + "| YAML     | Pass ✅           |\n"
 TEST_SUMMARY_FAIL = TEST_SUMMARY_HEADER + "| YAML     | Fail ❌           |\n"
+TEST_DISABLED_FLAG = "JSON"
+TEST_SUMMARY_DISABLED_RAN = TEST_SUMMARY_PASS + "| JSON     | Fail ❌           |\n"
 
 
 def write(path: Path, text: str = "x\n") -> Path:
@@ -44,7 +46,8 @@ def fake_docker(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, Path]]:
     """Replace git and docker: the fake image writes a Fail summary when the repository holds a bad file."""
     calls: list[tuple[str, Path]] = []
 
-    def fake_run_image(image: str, repo: Path, flag: str) -> None:
+    def fake_run_image(image: str, repo: Path, flags: list[str]) -> None:
+        flag = flags[0]
         calls.append((flag, repo))
         has_bad_file = any("bad" in found.name for found in repo.rglob("*") if found.is_file())
         summary = TEST_SUMMARY_FAIL if has_bad_file else TEST_SUMMARY_PASS
@@ -126,7 +129,7 @@ class TestDestination:
 
 class TestDockerCommand:
     def test_docker_command_should_enable_only_the_given_flag_when_the_command_is_built(self, tmp_path: Path) -> None:
-        command = smoke.docker_command(TEST_IMAGE, tmp_path, TEST_FLAG)
+        command = smoke.docker_command(TEST_IMAGE, tmp_path, [TEST_FLAG])
 
         enabled_flags = [part for part in command if part.startswith("VALIDATE_") and "ALL_CODEBASE" not in part]
         assert enabled_flags == ["VALIDATE_YAML=true"]
@@ -134,10 +137,90 @@ class TestDockerCommand:
     def test_docker_command_should_mount_the_repository_and_end_with_the_image_when_the_command_is_built(
         self, tmp_path: Path
     ) -> None:
-        command = smoke.docker_command(TEST_IMAGE, tmp_path, TEST_FLAG)
+        command = smoke.docker_command(TEST_IMAGE, tmp_path, [TEST_FLAG])
 
         assert f"{tmp_path}:/tmp/lint" in command
         assert command[-1] == TEST_IMAGE
+
+
+class TestDockerCommandWithSeveralFlags:
+    def test_docker_command_should_enable_every_given_flag_when_several_flags_are_given(self, tmp_path: Path) -> None:
+        command = smoke.docker_command(TEST_IMAGE, tmp_path, [TEST_FLAG, TEST_DISABLED_FLAG])
+
+        enabled_flags = [part for part in command if part.startswith("VALIDATE_") and "ALL_CODEBASE" not in part]
+        assert enabled_flags == ["VALIDATE_YAML=true", "VALIDATE_JSON=true"]
+
+
+class TestSkipped:
+    @staticmethod
+    def make_fixtures(root: Path) -> Path:
+        make_upstream(root, TEST_FLAG, [TEST_GOOD_FILE, TEST_BAD_FILE])
+        make_upstream(root, TEST_DISABLED_FLAG, ["json_bad_1.json"])
+        return root
+
+    def test_skipped_should_pass_when_the_disabled_linter_is_absent_from_the_summary(
+        self, tmp_path: Path, fake_docker: list[tuple[str, Path]], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        upstream = self.make_fixtures(tmp_path / "up")
+        monkeypatch.setattr(
+            smoke, "run_image", lambda image, repo, flags: write(repo / smoke.SUMMARY, TEST_SUMMARY_PASS)
+        )
+
+        line, ok = smoke.skipped(TEST_IMAGE, [TEST_FLAG], [TEST_FLAG, TEST_DISABLED_FLAG], upstream, tmp_path / "work")
+
+        assert ok
+        assert line == "Disabled linters: ok (1 skipped)"
+
+    def test_skipped_should_fail_and_name_the_linter_when_a_disabled_linter_appears_in_the_summary(
+        self, tmp_path: Path, fake_docker: list[tuple[str, Path]], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        upstream = self.make_fixtures(tmp_path / "up")
+        monkeypatch.setattr(
+            smoke, "run_image", lambda image, repo, flags: write(repo / smoke.SUMMARY, TEST_SUMMARY_DISABLED_RAN)
+        )
+
+        line, ok = smoke.skipped(TEST_IMAGE, [TEST_FLAG], [TEST_FLAG, TEST_DISABLED_FLAG], upstream, tmp_path / "work")
+
+        assert not ok
+        assert "ran although disabled: JSON" in line
+
+    def test_skipped_should_fail_when_the_image_did_not_lint_anything(
+        self, tmp_path: Path, fake_docker: list[tuple[str, Path]], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        upstream = self.make_fixtures(tmp_path / "up")
+        monkeypatch.setattr(smoke, "run_image", lambda image, repo, flags: None)
+
+        line, ok = smoke.skipped(TEST_IMAGE, [TEST_FLAG], [TEST_FLAG, TEST_DISABLED_FLAG], upstream, tmp_path / "work")
+
+        assert not ok
+        assert "the image did not lint" in line
+
+    def test_skipped_should_report_nothing_to_test_when_every_mapped_linter_is_enabled(
+        self, tmp_path: Path, fake_docker: list[tuple[str, Path]]
+    ) -> None:
+        upstream = self.make_fixtures(tmp_path / "up")
+
+        line, ok = smoke.skipped(TEST_IMAGE, [TEST_FLAG], [TEST_FLAG], upstream, tmp_path / "work")
+
+        assert ok
+        assert line == "Disabled linters: none to test"
+        assert fake_docker == []
+
+    def test_skipped_should_put_the_bad_files_of_the_disabled_linter_in_the_repository_when_it_runs(
+        self, tmp_path: Path, fake_docker: list[tuple[str, Path]], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        upstream = self.make_fixtures(tmp_path / "up")
+        seen: list[bool] = []
+
+        def fake_run_image(image: str, repo: Path, flags: list[str]) -> None:
+            seen.append((repo / "json_bad_1.json").is_file())
+            write(repo / smoke.SUMMARY, TEST_SUMMARY_PASS)
+
+        monkeypatch.setattr(smoke, "run_image", fake_run_image)
+
+        smoke.skipped(TEST_IMAGE, [TEST_FLAG], [TEST_FLAG, TEST_DISABLED_FLAG], upstream, tmp_path / "work")
+
+        assert seen == [True]
 
 
 class TestMain:
@@ -153,6 +236,33 @@ class TestMain:
         assert "| YAML | ok | ok |" in capsys.readouterr().out
         assert [flag for flag, _repo in fake_docker] == [TEST_FLAG, TEST_FLAG]
 
+    def test_main_should_return_one_when_a_disabled_linter_runs(
+        self,
+        tmp_path: Path,
+        fake_docker: list[tuple[str, Path]],
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        upstream = TestSkipped.make_fixtures(tmp_path / "up")
+        plan = make_plan(tmp_path / "plan.json", [TEST_FLAG])
+        mapping = tmp_path / "linters.json"
+        mapping.write_text(json.dumps({"linters": {TEST_FLAG: {}, TEST_DISABLED_FLAG: {}}}))
+        original = smoke.run_image
+
+        def fake_run_image(image: str, repo: Path, flags: list[str]) -> None:
+            summary = TEST_SUMMARY_DISABLED_RAN if len(flags) == 1 and "disabled" in repo.name else None
+            if summary is None:
+                original(image, repo, flags)
+            else:
+                write(repo / smoke.SUMMARY, summary)
+
+        monkeypatch.setattr(smoke, "run_image", fake_run_image)
+
+        code = smoke.main([TEST_IMAGE, str(plan), str(upstream), "--mapping", str(mapping)])
+
+        assert code == 1
+        assert "ran although disabled: JSON" in capsys.readouterr().out
+
     def test_main_should_return_one_when_the_bad_files_pass(
         self,
         tmp_path: Path,
@@ -163,7 +273,7 @@ class TestMain:
         upstream = make_upstream(tmp_path / "up", TEST_FLAG, [TEST_GOOD_FILE, TEST_BAD_FILE])
         plan = make_plan(tmp_path / "plan.json", [TEST_FLAG])
         monkeypatch.setattr(
-            smoke, "run_image", lambda image, repo, flag: write(repo / smoke.SUMMARY, TEST_SUMMARY_PASS)
+            smoke, "run_image", lambda image, repo, flags: write(repo / smoke.SUMMARY, TEST_SUMMARY_PASS)
         )
 
         code = smoke.main([TEST_IMAGE, str(plan), str(upstream)])
@@ -180,7 +290,7 @@ class TestMain:
     ) -> None:
         upstream = make_upstream(tmp_path / "up", TEST_FLAG, [TEST_GOOD_FILE, TEST_BAD_FILE])
         plan = make_plan(tmp_path / "plan.json", [TEST_FLAG])
-        monkeypatch.setattr(smoke, "run_image", lambda image, repo, flag: None)
+        monkeypatch.setattr(smoke, "run_image", lambda image, repo, flags: None)
 
         code = smoke.main([TEST_IMAGE, str(plan), str(upstream)])
 
@@ -263,7 +373,7 @@ class TestSubprocessWrappers:
 
         monkeypatch.setattr(smoke.subprocess, "run", fake_run)
 
-        smoke.run_image(TEST_IMAGE, tmp_path, TEST_FLAG)
+        smoke.run_image(TEST_IMAGE, tmp_path, [TEST_FLAG])
 
         assert seen[0][0][-1] == TEST_IMAGE
         assert seen[0][1] is False

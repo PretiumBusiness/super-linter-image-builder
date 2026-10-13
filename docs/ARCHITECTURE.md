@@ -101,3 +101,10 @@ of Super-Linter's `test/linters/<flag>` fixtures, taken from a checkout at the p
 they are read, not copied). The verdict comes from the Super-Linter summary, so a linter that found no files
 does not count as a pass. Flags without a fixture are reported, not failed. Upstream's own `TEST_CASE_RUN`
 mode cannot be used because it refuses to run unless every validation is enabled.
+
+It then runs the image once with every flag of the plan enabled, on the bad fixtures of the mapped linters that
+are not in the plan, and checks that none of them appears in the summary (disabled linters are skipped).
+
+The smoke test runs in the composite action (`self-image.yaml` and the registry builder), on each benchmark profile
+in `profiles.yaml` and on the image with every mapped linter in `upstream-sync.yaml`; its table goes to the job
+summary, and the table of the all-linters image goes to the sync pull request.
