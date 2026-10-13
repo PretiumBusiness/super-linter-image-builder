@@ -144,7 +144,7 @@ superlint-lean select-upstream --pinned-file upstream-version.txt [--force-tag T
 | `--cooldown-days N` | Only consider releases at least `N` days old (default `0`). |
 | `--repo OWNER/REPO` | The upstream repository (default `super-linter/super-linter`). |
 
-Reads the releases with the `gh` CLI and takes the newest published one (no draft, no prerelease) that is old enough. A
+Reads the releases with the `gh` CLI and takes the newest published one (no draft, no pre-release) that is old enough. A
 target that is not newer than the pinned version counts as current. Prints a summary line and, when `GITHUB_OUTPUT`
 is set, writes `pinned`, `latest` and `behind` (`true` or `false`) to it.
 
