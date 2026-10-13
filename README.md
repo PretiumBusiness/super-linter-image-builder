@@ -4,15 +4,15 @@ Generate lean, pinned [Super-Linter](https://github.com/super-linter/super-linte
 images that contain only the linters a repository uses, to cut the cold
 pull-and-unpack time in CI.
 
-Status: working, early. On GitHub-hosted runners a lean image pulls 4x to 8x
+Status: working, early. On GitHub-hosted runners a lean image pulls 5x to 8x
 faster than upstream `slim`:
 
 | Stack | Upstream slim | Lean | Faster |
 | --- | --- | --- | --- |
-| ghwm | 65.5 s | 9.2 s | 7.1x |
-| python | 66.0 s | 11.7 s | 5.7x |
-| frontend-react | 83.0 s | 12.4 s | 6.7x |
-| dotnet (against upstream standard) | 78.5 s | 14.1 s | 5.6x |
+| ghwm | 70.7 s | 10.7 s | 6.6x |
+| python | 67.9 s | 11.6 s | 5.9x |
+| frontend-react | 68.7 s | 10.4 s | 6.6x |
+| dotnet (against upstream standard) | 91.0 s | 16.9 s | 5.4x |
 
 Cold pull, median of 3, upstream v9.0.0. All profiles, the method and the
 caveats are in [docs/benchmarks](docs/benchmarks/README.md).
@@ -161,7 +161,7 @@ so the Svelte profile covers the JS, TS, CSS and HTML around it.
 - Pulling a private image needs credentials: `packages: read` for GHCR in the
   same organization, otherwise a registry login.
 - Only `linux/amd64` is tested. Images are not signed yet.
-- zstd layers are published, but their pull time has not been measured properly.
+- zstd layers are published and pull 0% to 15% faster than gzip; that is small next to leaving linters out.
 
 ## Licence
 
