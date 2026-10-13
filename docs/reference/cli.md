@@ -93,6 +93,21 @@ superlint-lean summarize FILE.jsonl...
 
 Same input and exit codes as `compare`. Rows without a runner (the build timings) print `null` and come first.
 
+## `repository-settings`
+
+Print or apply the repository settings in [repository-settings.md](../repository-settings.md). Maintainer tooling.
+
+```text
+superlint-lean repository-settings OWNER/REPO [--apply]
+```
+
+Without `--apply` it prints the `gh api` calls it would make. With `--apply` it runs them through the `gh` CLI,
+which must be logged in as an administrator of the repository: the merge options, the Actions permissions
+(commit-pinned actions, a read-only default token, workflows cannot approve pull requests) and the default-branch
+ruleset (sent on stdin). A failing call is reported and the rest still run.
+
+Exit codes: `0` done, `1` a call failed, `2` the repository is not `OWNER/REPO`.
+
 ## `smoke`
 
 Lint upstream's good and bad fixtures with a built image, one linter at a time.

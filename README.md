@@ -49,6 +49,7 @@ Commands:
 | `superlint-lean sync-mapping` | Compare the linter mapping with an upstream checkout and add draft entries |
 | `superlint-lean release-notes` | Release notes with before/after benchmarks of two upstream versions |
 | `superlint-lean compare`, `summarize` | Markdown tables from benchmark results: lean against baseline, and every variant on its own |
+| `superlint-lean repository-settings` | Print or apply the repository settings in `docs/repository-settings.md` (maintainers) |
 | `superlint-lean smoke` | Lint upstream's good and bad fixtures with a built image, one linter at a time |
 
 ## Layout
@@ -61,7 +62,7 @@ Commands:
 | `base/opinionated.env` | The opinionated base: the checks almost every repository wants (EditorConfig, env, actionlint, zizmor, gitleaks, JSON, Markdown, natural language, YAML, shell, hadolint) |
 | `toolchains/` | Example toolchains on top of the base: python, Java, dotnet, rust, c-cpp, frontend-{vanilla,react,vue,angular,svelte}, base-only |
 | `examples/` | `ghwm.env` (a real repository's exact flags, without the base) and `with-extras.env` |
-| `scripts/` | `bench-pull.sh`, `apply-repository-settings.sh`: cold pull timing and the repository settings (more of them move into the package, see #42) |
+| `scripts/` | `bench-pull.sh`: cold pull timing (the rest moved into the package, see #42) |
 | `.github/workflows/` | `tests`, `profiles` (benchmarks), `upstream-sync`, `release`, `self-image` (this repository's own lean image), and the reusable `drift-blocker` |
 
 ## Development

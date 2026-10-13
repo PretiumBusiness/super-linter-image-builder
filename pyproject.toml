@@ -79,6 +79,8 @@ ignore = ["E501"]
 "src/superlint_lean/drift.py" = ["S603", "S607"]
 # smoke runs git and docker with fixed argument lists
 "src/superlint_lean/smoke.py" = ["S603", "S607"]
+# repository_settings runs gh with a fixed argument list
+"src/superlint_lean/repository_settings.py" = ["S603", "S607"]
 "tests/*" = ["S101", "S105", "S106", "S108", "S603"]
 
 [tool.mypy]
