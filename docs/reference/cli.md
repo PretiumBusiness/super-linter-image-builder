@@ -68,6 +68,27 @@ Write release notes comparing the benchmarks of two upstream versions.
 | `--mapping-diff FILE` | Append the mapping changes between the versions. |
 | `--out FILE` | Also write the notes to a file. |
 
+## `bench`
+
+Time `docker pull` and the container start of an image. Used by the benchmark workflow.
+
+```text
+superlint-lean bench IMAGE [RUNS] VARIANT RUNNER [--mode cold|warm] [--out FILE] [--split]
+```
+
+| Option | Description |
+| :--- | :--- |
+| `RUNS` | Number of runs (default 5). |
+| `VARIANT`, `RUNNER` | Labels written to every row, normally `<profile>/<kind>` and the runner environment. |
+| `--mode` | `cold` (default, `$BENCH_MODE`): before every run remove the image and every other unused image and the build cache, so no variant can reuse another's layers. `warm`: the image stays; a first unmeasured pull makes sure it is there. |
+| `--out FILE` | JSON lines file to append to (default `bench-results.jsonl`, `$BENCH_OUT`). Each row is also printed. |
+| `--split` | Also time a download-only pull with crane and a `docker load` in cold mode (`BENCH_SPLIT=1`); a rough download against unpack split. |
+
+Rows carry `image`, `variant`, `runner`, `mode`, `run`, `pull_s`, `start_s`, `download_s`, `load_s`, `compressed_bytes`
+(read with crane when installed) and `uncompressed_bytes`.
+
+Exit codes: `0` done, `1` a Docker call failed, `2` a bad argument.
+
 ## `compare`
 
 Markdown tables from benchmark results: lean against the upstream baseline, per profile.

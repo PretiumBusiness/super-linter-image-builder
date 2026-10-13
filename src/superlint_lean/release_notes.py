@@ -6,7 +6,7 @@ Usage:
         [--mapping-diff mapping.diff] [--out notes.md]
 
 Each directory holds the bench-<profile>.jsonl files written by
-scripts/bench-pull.sh (and optionally build-<profile>.jsonl). For every profile
+`superlint-lean bench` (and optionally build-<profile>.jsonl). For every profile
 present in both, the notes show the median cold pull time and the image size
 before and after, for the upstream image and for the lean image. Pull times
 depend on the runner and the network at the time, so a change smaller than the
