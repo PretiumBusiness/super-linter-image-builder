@@ -46,12 +46,13 @@ flowchart LR
 
 | Module | Responsibility |
 | :--- | :--- |
-| `cli.py` | Dispatches `generate`, `drift`, `sync-mapping`, `release-notes` and `smoke`; prints usage and the version. |
+| `cli.py` | Dispatches `generate`, `drift`, `sync-mapping`, `release-notes`, `compare`, `summarize` and `smoke`; prints usage and the version. |
 | `config.py` | Parses env files and workflows; `effective_flags` implements the upstream `VALIDATE_*` rules. |
 | `generate.py` | Turns the selected flags plus `data/linters.json` into `Dockerfile`, `checks.sh`, `plan.json`. |
 | `drift.py` | Maps changed files to flags with `data/filetypes.json` and reports files no enabled linter covers. |
 | `mapping_sync.py` | Reads an upstream checkout and adds draft entries to `linters.json` for new flags. |
 | `release_notes.py` | Compares `bench-*.jsonl` results of two upstream versions into Markdown release notes. |
+| `report.py` | Turns `bench-*.jsonl` and `build-*.jsonl` into the Markdown tables of `compare` (lean against baseline, per profile) and `summarize` (one row per variant). |
 | `smoke.py` | Runs a built image on upstream's good and bad fixtures, one linter at a time, and reports the outcome. |
 
 ## Data
