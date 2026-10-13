@@ -19,6 +19,7 @@ TEST_SUMMARY_HEADER = "| Language | Validation result |\n| --- | --- |\n"
 TEST_SUMMARY_PASS = TEST_SUMMARY_HEADER + "| YAML     | Pass ✅           |\n"
 TEST_SUMMARY_FAIL = TEST_SUMMARY_HEADER + "| YAML     | Fail ❌           |\n"
 TEST_DISABLED_FLAG = "JSON"
+TEST_EDITORCONFIG_FLAG = "EDITORCONFIG"
 TEST_SUMMARY_DISABLED_RAN = TEST_SUMMARY_PASS + "| JSON     | Fail ❌           |\n"
 
 
@@ -194,6 +195,29 @@ class TestSkipped:
 
         assert not ok
         assert "the image did not lint" in line
+
+    def test_skipped_should_copy_the_editorconfig_when_the_enabled_linter_used_as_probe_is_editorconfig(
+        self, tmp_path: Path, fake_docker: list[tuple[str, Path]], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        upstream = make_upstream(tmp_path / "up", TEST_EDITORCONFIG_FLAG, ["x_good_1.ext"])
+        make_upstream(upstream, TEST_DISABLED_FLAG, ["json_bad_1.json"])
+        editorconfig_seen: list[bool] = []
+
+        def fake_run_image(image: str, repo: Path, flags: list[str]) -> None:
+            editorconfig_seen.append((repo / ".editorconfig").is_file())
+            write(repo / smoke.SUMMARY, TEST_SUMMARY_PASS.replace(TEST_FLAG + "    ", f"{TEST_EDITORCONFIG_FLAG:<8}"))
+
+        monkeypatch.setattr(smoke, "run_image", fake_run_image)
+
+        smoke.skipped(
+            TEST_IMAGE,
+            [TEST_EDITORCONFIG_FLAG],
+            [TEST_EDITORCONFIG_FLAG, TEST_DISABLED_FLAG],
+            upstream,
+            tmp_path / "work",
+        )
+
+        assert editorconfig_seen == [True]
 
     def test_skipped_should_report_nothing_to_test_when_every_mapped_linter_is_enabled(
         self, tmp_path: Path, fake_docker: list[tuple[str, Path]]
