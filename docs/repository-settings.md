@@ -28,6 +28,13 @@ scripts/apply-repository-settings.sh OWNER/REPO --apply    # apply (needs admin 
 | Default workflow token | read-only | Workflows request the permissions they need per job. |
 | Approve pull requests from workflows | disabled | Automation cannot approve its own changes. |
 
+The weekly `upstream-sync` opens its pull request with the `SYNC_PR_TOKEN`
+secret, a fine-grained token limited to this repository with "Pull requests:
+write" (and "Contents: read"). It is not `GITHUB_TOKEN`, so the setting above
+stays disabled, and the pull request starts the tests and the lint. Without the
+secret the branch is pushed but no pull request is opened. A fine-grained token
+expires; renew it before then (a GitHub App token would not).
+
 Workflows start with `permissions: {}` and grant per-job permissions. Pull
 request workflows must never run on a self-hosted runner.
 
