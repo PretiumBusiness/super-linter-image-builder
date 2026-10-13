@@ -135,6 +135,7 @@ jobs:
           sparse-checkout: |
             /Dockerfile
             /.editorconfig
+            /.github/linters/
             /test/linters/
           sparse-checkout-cone-mode: false
 
@@ -216,7 +217,7 @@ jobs:
       - name: Smoke-test the lean image
         run: |
           status=0
-          uv run --no-dev superlint-lean smoke "${LEAN_BASE}:${TAG}-gzip" build/plan.json upstream > "smoke-${PROFILE}.md" || status=$?
+          uv run --no-dev superlint-lean smoke "${LEAN_BASE}:${TAG}-gzip" build/plan.json upstream --jobs 4 > "smoke-${PROFILE}.md" || status=$?
           {
             echo "### Smoke test: ${PROFILE}"
             echo

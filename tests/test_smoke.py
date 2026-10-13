@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -19,6 +20,10 @@ TEST_SUMMARY_HEADER = "| Language | Validation result |\n| --- | --- |\n"
 TEST_SUMMARY_PASS = TEST_SUMMARY_HEADER + "| YAML     | Pass ✅           |\n"
 TEST_SUMMARY_FAIL = TEST_SUMMARY_HEADER + "| YAML     | Fail ❌           |\n"
 TEST_DISABLED_FLAG = "JSON"
+TEST_LINTER_CONFIG = "export default [];\n"
+TEST_FIXTURE_EDITORCONFIG = "root = true\nindent_size = 2\n"
+TEST_KNOWN_ISSUE_FLAG = "CHECKOV"
+TEST_KOTLIN_FLAG = "KOTLIN"
 TEST_EDITORCONFIG_FLAG = "EDITORCONFIG"
 TEST_SUMMARY_DISABLED_RAN = TEST_SUMMARY_PASS + "| JSON     | Fail ❌           |\n"
 
@@ -100,6 +105,26 @@ class TestCopyFixtures:
         assert copied == 2
         assert copied_names == ["a_bad_1.yml", "nested.txt"]
 
+    def test_copy_fixtures_should_copy_support_files_when_a_file_is_neither_good_nor_bad(self, tmp_path: Path) -> None:
+        source = tmp_path / "src"
+        write(source / "a_good_1.java")
+        write(source / "a_bad_1.java")
+        write(source / "package-info.java")
+        destination = tmp_path / "dest"
+
+        smoke.copy_fixtures(source, "good", destination)
+
+        copied_names = sorted(found.name for found in destination.rglob("*") if found.is_file())
+        assert copied_names == ["a_good_1.java", "package-info.java"]
+
+    def test_copy_fixtures_should_not_count_support_files_when_they_are_the_only_files(self, tmp_path: Path) -> None:
+        source = tmp_path / "src"
+        write(source / "package-info.java")
+
+        copied = smoke.copy_fixtures(source, "good", tmp_path / "dest")
+
+        assert copied == 0
+
     def test_copy_fixtures_should_return_zero_when_no_file_matches(self, tmp_path: Path) -> None:
         source = tmp_path / "src"
         write(source / "a_good_1.yml")
@@ -122,10 +147,47 @@ class TestDestination:
 
         assert destination == tmp_path / ".github" / "workflows"
 
+    def test_destination_should_use_the_ansible_directory_when_the_flag_is_ansible(self, tmp_path: Path) -> None:
+        destination = smoke.destination(tmp_path, "ANSIBLE")
+
+        assert destination == tmp_path / "ansible"
+
     def test_destination_should_use_the_repository_root_when_the_flag_lints_any_file(self, tmp_path: Path) -> None:
         destination = smoke.destination(tmp_path, TEST_FLAG)
 
         assert destination == tmp_path
+
+
+class TestAddUpstreamConfig:
+    def test_add_upstream_config_should_copy_the_editorconfig_to_the_repository_root_when_the_flag_reads_it(
+        self, tmp_path: Path
+    ) -> None:
+        upstream = make_upstream(tmp_path / "up", TEST_FLAG, [TEST_GOOD_FILE])
+        repo = tmp_path / "repo"
+
+        smoke.add_upstream_config(upstream, repo, [TEST_KOTLIN_FLAG])
+
+        assert (repo / ".editorconfig").read_text() == TEST_EDITORCONFIG
+
+    def test_add_upstream_config_should_copy_the_linter_config_directory_when_the_flag_reads_it(
+        self, tmp_path: Path
+    ) -> None:
+        upstream = make_upstream(tmp_path / "up", TEST_FLAG, [TEST_GOOD_FILE])
+        write(upstream / ".github" / "linters" / ".clj-kondo" / "config.edn", TEST_LINTER_CONFIG)
+        repo = tmp_path / "repo"
+
+        smoke.add_upstream_config(upstream, repo, ["CLOJURE"])
+
+        assert (repo / ".github" / "linters" / ".clj-kondo" / "config.edn").read_text() == TEST_LINTER_CONFIG
+
+    def test_add_upstream_config_should_copy_nothing_when_the_flag_reads_no_upstream_file(self, tmp_path: Path) -> None:
+        upstream = make_upstream(tmp_path / "up", TEST_FLAG, [TEST_GOOD_FILE])
+        write(upstream / ".github" / "linters" / "eslint.config.mjs", TEST_LINTER_CONFIG)
+        repo = tmp_path / "repo"
+
+        smoke.add_upstream_config(upstream, repo, [TEST_FLAG])
+
+        assert list(repo.iterdir()) == []
 
 
 class TestDockerCommand:
@@ -245,6 +307,49 @@ class TestSkipped:
         smoke.skipped(TEST_IMAGE, [TEST_FLAG], [TEST_FLAG, TEST_DISABLED_FLAG], upstream, tmp_path / "work")
 
         assert seen == [True]
+
+
+class TestCheckFlag:
+    def test_check_flag_should_print_done_to_stderr_when_the_flag_behaves(
+        self, tmp_path: Path, fake_docker: list[tuple[str, Path]], capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        upstream = make_upstream(tmp_path / "up", TEST_FLAG, [TEST_GOOD_FILE, TEST_BAD_FILE])
+
+        smoke.check_flag(TEST_IMAGE, TEST_FLAG, upstream, tmp_path / "work")
+
+        printed = capsys.readouterr().err
+        assert printed == "YAML: done\n"
+
+    def test_check_flag_should_print_fail_to_stderr_when_the_bad_files_pass(
+        self,
+        tmp_path: Path,
+        fake_docker: list[tuple[str, Path]],
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        upstream = make_upstream(tmp_path / "up", TEST_FLAG, [TEST_GOOD_FILE, TEST_BAD_FILE])
+        monkeypatch.setattr(
+            smoke, "run_image", lambda image, repo, flags: write(repo / smoke.SUMMARY, TEST_SUMMARY_PASS)
+        )
+
+        smoke.check_flag(TEST_IMAGE, TEST_FLAG, upstream, tmp_path / "work")
+
+        printed = capsys.readouterr().err
+        assert printed == "YAML: FAIL\n"
+
+
+class TestSmokeJobs:
+    def test_smoke_should_keep_the_order_of_the_flags_when_several_jobs_run_at_once(
+        self, tmp_path: Path, fake_docker: list[tuple[str, Path]]
+    ) -> None:
+        upstream = make_upstream(tmp_path / "up", TEST_FLAG, [TEST_GOOD_FILE, TEST_BAD_FILE])
+        make_upstream(upstream, TEST_DISABLED_FLAG, ["json_good_1.json", "json_bad_1.json"])
+        flags = [TEST_DISABLED_FLAG, TEST_FLAG]
+
+        lines, _ok = smoke.smoke(TEST_IMAGE, flags, upstream, flags, jobs=2)
+
+        rows = [line.split(" | ")[0] for line in lines[2:4]]
+        assert rows == ["| JSON", "| YAML"]
 
 
 class TestMain:
@@ -367,6 +472,47 @@ class TestMain:
         for _flag, repo in fake_docker:
             assert (repo / ".editorconfig").read_text() == TEST_EDITORCONFIG
 
+    def test_main_should_keep_the_editorconfig_of_the_fixtures_when_upstream_has_a_different_one(
+        self, tmp_path: Path, fake_docker: list[tuple[str, Path]]
+    ) -> None:
+        upstream = make_upstream(tmp_path / "up", TEST_KOTLIN_FLAG, ["k_good_1.kt", "k_bad_1.kt"])
+        write(upstream / "test" / "linters" / TEST_KOTLIN_FLAG.lower() / ".editorconfig", TEST_FIXTURE_EDITORCONFIG)
+        plan = make_plan(tmp_path / "plan.json", [TEST_KOTLIN_FLAG])
+
+        smoke.main([TEST_IMAGE, str(plan), str(upstream)])
+
+        for _flag, repo in fake_docker:
+            assert (repo / ".editorconfig").read_text() == TEST_FIXTURE_EDITORCONFIG
+
+    def test_main_should_skip_the_kind_with_a_known_upstream_issue_and_return_zero_when_the_other_kind_behaves(
+        self, tmp_path: Path, fake_docker: list[tuple[str, Path]], capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        upstream = make_upstream(tmp_path / "up", TEST_KNOWN_ISSUE_FLAG, [TEST_GOOD_FILE, TEST_BAD_FILE])
+        plan = make_plan(tmp_path / "plan.json", [TEST_KNOWN_ISSUE_FLAG])
+
+        code = smoke.main([TEST_IMAGE, str(plan), str(upstream)])
+
+        printed = capsys.readouterr().out
+        assert code == 0
+        assert f"| {TEST_KNOWN_ISSUE_FLAG} | skipped (known upstream issue) | ok |" in printed
+
+    def test_main_should_not_run_the_image_for_the_kind_with_a_known_upstream_issue_when_it_is_skipped(
+        self, tmp_path: Path, fake_docker: list[tuple[str, Path]]
+    ) -> None:
+        upstream = make_upstream(tmp_path / "up", TEST_KNOWN_ISSUE_FLAG, [TEST_GOOD_FILE, TEST_BAD_FILE])
+        plan = make_plan(tmp_path / "plan.json", [TEST_KNOWN_ISSUE_FLAG])
+
+        smoke.main([TEST_IMAGE, str(plan), str(upstream)])
+
+        assert len(fake_docker) == 1
+
+    def test_main_should_return_two_when_jobs_is_less_than_one(self, tmp_path: Path) -> None:
+        plan = make_plan(tmp_path / "plan.json", [TEST_FLAG])
+
+        code = smoke.main([TEST_IMAGE, str(plan), str(tmp_path), "--jobs", "0"])
+
+        assert code == 2
+
     def test_main_should_return_two_when_the_plan_cannot_be_read(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
@@ -379,6 +525,21 @@ class TestMain:
 
 
 class TestSubprocessWrappers:
+    def test_init_repository_should_configure_an_origin_remote_when_the_repository_is_created(
+        self, tmp_path: Path
+    ) -> None:
+        write(tmp_path / "a.yml")
+
+        smoke.init_repository(tmp_path)
+
+        remote = subprocess.run(
+            [shutil.which("git") or "git", "-C", str(tmp_path), "remote", "get-url", "origin"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        assert remote.startswith("https://")
+
     def test_init_repository_should_create_a_git_repository_when_git_is_available(self, tmp_path: Path) -> None:
         write(tmp_path / "a.yml")
 
