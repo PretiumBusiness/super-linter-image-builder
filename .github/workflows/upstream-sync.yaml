@@ -192,7 +192,7 @@ jobs:
         timeout-minutes: 120
         run: |
           status=0
-          uv run superlint-lean smoke lean-all:check build-all/plan.json upstream > smoke-all.md || status=$?
+          uv run superlint-lean smoke lean-all:check build-all/plan.json upstream --jobs 4 > smoke-all.md || status=$?
           {
             echo "### Smoke test: every mapped linter on upstream's good and bad fixtures"
             echo

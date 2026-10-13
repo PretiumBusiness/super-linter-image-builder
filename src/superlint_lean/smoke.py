@@ -1,7 +1,7 @@
 """Smoke-test a built image against Super-Linter's own good and bad fixtures.
 
 Usage:
-    superlint-lean smoke <image> <plan.json> <upstream-dir> [--mapping linters.json]
+    superlint-lean smoke <image> <plan.json> <upstream-dir> [--mapping linters.json] [--jobs N]
 
     plan.json
         written by ``superlint-lean generate`` (its "flags" list)
@@ -11,8 +11,8 @@ Usage:
         copied into this repository or the image)
 
 Each flag uses ``test/linters/<flag in lower case>``. Files with "good" in their
-path must pass and files with "bad" must fail, judged by the Super-Linter
-summary, so a linter that found no files to lint does not count as a pass.
+path must pass and files with "bad" must fail (files with neither are support
+files and are copied to both runs), judged by the Super-Linter summary, so a linter that found no files to lint does not count as a pass.
 Only that one linter is enabled, so the run also shows that the image lints
 with a lean flag set. Upstream's own ``TEST_CASE_RUN`` mode cannot be used: it
 refuses to run unless every validation is enabled.
@@ -34,18 +34,40 @@ import subprocess
 import sys
 import tempfile
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 MAPPING = Path(__file__).resolve().parent / "data" / "linters.json"
 
-# these linters only look at files under .github/workflows
-WORKFLOW_FLAGS = frozenset({"GITHUB_ACTIONS", "GITHUB_ACTIONS_ZIZMOR"})
+# these linters only look at files under one directory of the repository
+FLAG_DIRECTORIES = {
+    "GITHUB_ACTIONS": Path(".github") / "workflows",
+    "GITHUB_ACTIONS_ZIZMOR": Path(".github") / "workflows",
+    "ANSIBLE": Path("ansible"),
+}
 SUMMARY = Path("super-linter-output") / "super-linter-summary.md"
+
+# Files of the upstream repository that a linter reads from the repository it lints.
+UPSTREAM_CONFIG = {
+    "EDITORCONFIG": (".editorconfig",),
+    "CSHARP": (".editorconfig",),
+    "DOTNET_SLN_FORMAT_WHITESPACE": (".editorconfig",),
+    "KOTLIN": (".editorconfig",),
+    "CLOJURE": (".github/linters/.clj-kondo",),
+    "JSONC": (".github/linters/eslint.config.mjs",),
+    "VUE": (".github/linters/eslint.config.mjs",),
+}
+
+# Fixtures that do not behave on upstream's own image either (checked against ghcr.io/super-linter/super-linter:v9.0.0):
+# CKV_K8S_14 fails a good Kubernetes fixture, the bad pre-commit fixture is accepted, and the biome.json
+# next to the good biome fixture is itself linted and fails the formatter.
+KNOWN_FIXTURE_ISSUES = frozenset({("CHECKOV", "good"), ("PRE_COMMIT", "bad"), ("BIOME_FORMAT", "good")})
 
 CLEAN = "pass"
 ERRORS = "fail"
 NOT_LINTED = "not-linted"
 NO_FILES = "no-files"
+KNOWN_ISSUE = "known-issue"
 
 
 def fixture_dir(upstream: Path, flag: str) -> Path:
@@ -53,20 +75,27 @@ def fixture_dir(upstream: Path, flag: str) -> Path:
 
 
 def destination(repo: Path, flag: str) -> Path:
-    return repo / ".github" / "workflows" if flag in WORKFLOW_FLAGS else repo
+    return repo / FLAG_DIRECTORIES.get(flag, Path())
 
 
 def copy_fixtures(source: Path, kind: str, dest: Path) -> int:
-    """Copy the files of `source` with `kind` ("good" or "bad") in their path; return how many."""
+    """Copy the fixtures for a `kind` ("good" or "bad") run; return how many files are of that kind.
+
+    Files of the other kind stay out. Files that are neither good nor bad (a package-info.java,
+    an .editorconfig, a .sqlfluff) are support files of the fixtures and come along.
+    """
+    other = "bad" if kind == "good" else "good"
     copied = 0
     for path in sorted(p for p in source.rglob("*") if p.is_file()):
         relative = path.relative_to(source)
-        if kind not in relative.as_posix().lower():
+        name = relative.as_posix().lower()
+        if other in name:
             continue
         target = dest / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(path, target)
-        copied += 1
+        if kind in name:
+            copied += 1
     return copied
 
 
@@ -112,6 +141,7 @@ def init_repository(repo: Path) -> None:
     """Super-Linter lints a git repository; commit the copied fixtures."""
     for args in (
         ["init", "-q", "-b", "main"],
+        ["remote", "add", "origin", "https://github.com/example/fixtures.git"],
         ["add", "-A"],
         ["-c", "user.email=smoke@example.com", "-c", "user.name=smoke", "commit", "-qm", "fixtures"],
     ):
@@ -144,18 +174,32 @@ def clear_directory(image: str, work: Path) -> None:
     shutil.rmtree(work, ignore_errors=True)
 
 
-def add_editorconfig(upstream: Path, repo: Path, flag: str) -> None:
-    """The EDITORCONFIG linter needs the upstream .editorconfig next to the fixtures."""
-    if flag == "EDITORCONFIG":
-        shutil.copy2(upstream / ".editorconfig", repo / ".editorconfig")
+def add_upstream_config(upstream: Path, repo: Path, flags: Sequence[str]) -> None:
+    """Copy the upstream files the `flags` read from the repository they are tested in.
+
+    Copy them before the fixtures: a fixture directory may bring its own .editorconfig,
+    which has to win. Only the files a linter needs go in: the others would be linted as
+    part of the repository (biome rejects the .editorconfig and the files of .github/linters).
+    """
+    repo.mkdir(parents=True, exist_ok=True)
+    for relative in sorted({path for flag in flags for path in UPSTREAM_CONFIG.get(flag, ())}):
+        source = upstream / relative
+        target = repo / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if source.is_dir():
+            shutil.copytree(source, target, dirs_exist_ok=True)
+        elif source.is_file():
+            shutil.copy2(source, target)
 
 
 def result(image: str, flag: str, kind: str, source: Path, upstream: Path, work: Path) -> str:
-    """pass, fail, not-linted, or no-files when the fixtures have no `kind` file."""
+    """pass, fail, not-linted, no-files when the fixtures have no `kind` file, or known-issue."""
+    if (flag, kind) in KNOWN_FIXTURE_ISSUES:
+        return KNOWN_ISSUE
     repo = work / f"{flag}-{kind}"
+    add_upstream_config(upstream, repo, [flag])
     if copy_fixtures(source, kind, destination(repo, flag)) == 0:
         return NO_FILES
-    add_editorconfig(upstream, repo, flag)
     init_repository(repo)
     run_image(image, repo, [flag])
     summary = repo / SUMMARY
@@ -168,12 +212,12 @@ def skipped(image: str, enabled: Sequence[str], mapped: Sequence[str], upstream:
     if not disabled:
         return "Disabled linters: none to test", True
     repo = work / "disabled"
+    add_upstream_config(upstream, repo, enabled)
     for flag in disabled:
         copy_fixtures(fixture_dir(upstream, flag), "bad", destination(repo, flag))
     probe = next((flag for flag in enabled if fixture_dir(upstream, flag).is_dir()), "")
     if probe:
         copy_fixtures(fixture_dir(upstream, probe), "good", destination(repo, probe))
-        add_editorconfig(upstream, repo, probe)
     init_repository(repo)
     run_image(image, repo, enabled)
     summary = repo / SUMMARY
@@ -192,24 +236,38 @@ def cell(outcome: str, expected: str, label: str) -> tuple[str, bool]:
         return "ok", False
     if outcome == NO_FILES:
         return f"no {label} file", False
+    if outcome == KNOWN_ISSUE:
+        return "skipped (known upstream issue)", False
     return f"FAIL ({outcome})", True
 
 
-def smoke(image: str, flags: Sequence[str], upstream: Path, mapped: Sequence[str] = ()) -> tuple[list[str], bool]:
-    """The Markdown lines and whether every flag behaved and the disabled linters were skipped."""
+def check_flag(image: str, flag: str, upstream: Path, work: Path) -> tuple[str, bool]:
+    """The table row of `flag` and whether it failed; progress goes to stderr."""
+    source = fixture_dir(upstream, flag)
+    if not source.is_dir():
+        row, failed = f"| {flag} | no fixture | no fixture |", False
+    else:
+        good, good_failed = cell(result(image, flag, "good", source, upstream, work), CLEAN, "good")
+        bad, bad_failed = cell(result(image, flag, "bad", source, upstream, work), ERRORS, "bad")
+        row, failed = f"| {flag} | {good} | {bad} |", good_failed or bad_failed
+    print(f"{flag}: {'FAIL' if failed else 'done'}", file=sys.stderr, flush=True)
+    return row, failed
+
+
+def smoke(
+    image: str, flags: Sequence[str], upstream: Path, mapped: Sequence[str] = (), jobs: int = 1
+) -> tuple[list[str], bool]:
+    """The Markdown lines and whether every flag behaved and the disabled linters were skipped.
+
+    Up to `jobs` flags are tested at the same time; the rows keep the order of `flags`.
+    """
     lines = ["| Flag | Good file | Bad file |", "| --- | --- | --- |"]
-    ok = True
     work = Path(tempfile.mkdtemp())
     try:
-        for flag in flags:
-            source = fixture_dir(upstream, flag)
-            if not source.is_dir():
-                lines.append(f"| {flag} | no fixture | no fixture |")
-                continue
-            good, good_failed = cell(result(image, flag, "good", source, upstream, work), CLEAN, "good")
-            bad, bad_failed = cell(result(image, flag, "bad", source, upstream, work), ERRORS, "bad")
-            ok = ok and not good_failed and not bad_failed
-            lines.append(f"| {flag} | {good} | {bad} |")
+        with ThreadPoolExecutor(max_workers=jobs) as pool:
+            checked = list(pool.map(lambda flag: check_flag(image, flag, upstream, work), flags))
+        ok = not any(failed for _row, failed in checked)
+        lines += [row for row, _failed in checked]
         line, skipped_ok = skipped(image, flags, mapped, upstream, work)
         ok = ok and skipped_ok
         lines += ["", line]
@@ -226,7 +284,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument(
         "--mapping", default=str(MAPPING), help="linters.json; its flags that are not in the plan must be skipped"
     )
+    ap.add_argument("--jobs", type=int, default=1, help="test this many flags at the same time (default: %(default)s)")
     args = ap.parse_args(argv)
+    if args.jobs < 1:
+        print(f"::error::--jobs must be at least 1, got {args.jobs}")
+        return 2
 
     try:
         flags: list[str] = json.loads(Path(args.plan).read_text())["flags"]
@@ -234,7 +296,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except (OSError, ValueError, KeyError) as e:
         print(f"::error::cannot read the flags from {args.plan} or {args.mapping}: {e}")
         return 2
-    lines, ok = smoke(args.image, flags, Path(args.upstream), mapped)
+    lines, ok = smoke(args.image, flags, Path(args.upstream), mapped, args.jobs)
     print("\n".join(lines))
     return 0 if ok else 1
 

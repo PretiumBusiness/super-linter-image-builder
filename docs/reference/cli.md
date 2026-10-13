@@ -155,19 +155,24 @@ Exit codes: `0` done, `2` a bad argument or the releases could not be read.
 Lint upstream's good and bad fixtures with a built image, one linter at a time.
 
 ```text
-superlint-lean smoke <image> <plan.json> <upstream-dir> [--mapping linters.json]
+superlint-lean smoke <image> <plan.json> <upstream-dir> [--mapping linters.json] [--jobs N]
 ```
 
 | Argument | Description |
 | :--- | :--- |
 | `image` | The image to test, for example the one built from `generate`'s output. |
 | `plan.json` | Written by `generate`; its `flags` list says which linters to test. |
-| `upstream-dir` | A Super-Linter checkout at the tag the image was built from (only `test/linters` and `.editorconfig` are read). |
+| `upstream-dir` | A Super-Linter checkout at the tag the image was built from (only `test/linters`, `.editorconfig` and `.github/linters` are read). |
+| `--jobs` | Test this many flags at the same time (default `1`). The table keeps the order of the plan; one progress line per flag goes to stderr. |
 | `--mapping` | The `linters.json` whose flags are mapped (default: the bundled one). Mapped flags that are not in the plan are the disabled linters. |
 
 Prints a Markdown table with one row per flag. A flag passes when the good files pass and the bad files fail
 in the Super-Linter summary; a linter that found no files counts as a failure. Flags without a fixture
-directory are reported, not failed.
+directory are reported, not failed. Files in a fixture directory that are neither good nor bad (a `package-info.java`,
+an `.editorconfig`, a `.sqlfluff`) are support files and go into both runs; the few upstream files that a linter reads
+(`.editorconfig` for ktlint and dotnet format, the clj-kondo and eslint config in `.github/linters`) are copied first, so a
+fixture can override them. A few fixtures do not behave on upstream's own image either (the good Checkov and biome
+format files, the bad pre-commit file); they are listed as skipped.
 
 After the table it enables every flag of the plan at once and puts the bad fixtures of the mapped linters that are
 not in the plan into the repository. None of those linters may appear in the summary: a disabled linter is skipped,

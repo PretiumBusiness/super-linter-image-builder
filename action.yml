@@ -58,7 +58,7 @@ runs:
         rm -rf "${upstream}"
         git clone --quiet --depth 1 --branch "${UPSTREAM_TAG}" --filter=blob:none --sparse \
           https://github.com/super-linter/super-linter "${upstream}"
-        git -C "${upstream}" sparse-checkout set --no-cone '/Dockerfile' '/.editorconfig' '/test/linters/'
+        git -C "${upstream}" sparse-checkout set --no-cone '/Dockerfile' '/.editorconfig' '/.github/linters/' '/test/linters/'
         echo "path=${upstream}" >> "${GITHUB_OUTPUT}"
 
     - name: Generate the build context
@@ -109,7 +109,7 @@ runs:
       run: |
         status=0
         uv run --project "${GITHUB_ACTION_PATH}" superlint-lean smoke \
-          "${IMAGE}" "${CONTEXT}/plan.json" "${UPSTREAM}" > "${RUNNER_TEMP}/smoke.md" || status=$?
+          "${IMAGE}" "${CONTEXT}/plan.json" "${UPSTREAM}" --jobs 4 > "${RUNNER_TEMP}/smoke.md" || status=$?
         cat "${RUNNER_TEMP}/smoke.md"
         { echo "### Smoke test"; echo; cat "${RUNNER_TEMP}/smoke.md"; } >> "${GITHUB_STEP_SUMMARY}"
         exit "${status}"

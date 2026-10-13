@@ -11,7 +11,17 @@ from typing import Any
 import pytest
 
 from superlint_lean import generate
-from tests.shared import ENV_JSON, ENV_TRUE, ENV_YAML, FLAG_JSON, FLAG_YAML, PYTHON_BASE, UPSTREAM_TAG, WORKFLOW_FIXTURE
+from tests.shared import (
+    ENV_JSON,
+    ENV_TRUE,
+    ENV_YAML,
+    FLAG_JSON,
+    FLAG_YAML,
+    PYTHON_BASE,
+    UPSTREAM_TAG,
+    WORKFLOW_FIXTURE,
+    load_mapping,
+)
 
 TEST_STANDARD_IMAGE = f"ghcr.io/super-linter/super-linter:{UPSTREAM_TAG}"
 TEST_SLIM_IMAGE = f"ghcr.io/super-linter/super-linter:slim-{UPSTREAM_TAG}"
@@ -20,6 +30,7 @@ TEST_EXTRA_PIP = "yq==3.4.3"
 TEST_EXTRA_CHECK = "tree --version"
 TEST_SHELL_NOT_FOUND = "echo 'sh: tool: not found'"
 TEST_TOOL_PRINTING_NOT_FOUND_IN_TITLE_CASE = "echo 'LuaLanes: Not found'"
+TEST_PERL_MISSING_MODULE = 'echo "Can\'t locate Pod/PlainText.pm in @INC"'
 TEST_MISSING_LIBRARY = "echo 'error while loading shared libraries: libx.so'"
 
 
@@ -61,10 +72,39 @@ class TestCheckFunction:
 
         assert printed.startswith("FAIL (0)")
 
+    def test_run_check_should_fail_when_perl_cannot_locate_a_module(self) -> None:
+        printed = run_check(TEST_PERL_MISSING_MODULE)
+
+        assert printed.startswith("FAIL (0)")
+
     def test_run_check_should_pass_when_a_working_tool_prints_not_found_in_title_case(self) -> None:
         printed = run_check(TEST_TOOL_PRINTING_NOT_FOUND_IN_TITLE_CASE)
 
         assert printed.startswith("ok:")
+
+
+class TestMappingFindingsOfTheSmokeTest:
+    """Gaps the smoke test found in the lean image: files that upstream installs outside the usual paths."""
+
+    def test_mapping_should_copy_the_pod_modules_that_perl_critic_needs_when_perl_is_enabled(self) -> None:
+        perl_dirs = load_mapping()["linters"]["PERL"]["dirs"]
+
+        assert "/usr/share/perl5/core_perl/Pod/PlainText.pm" in perl_dirs
+
+    def test_mapping_should_check_that_perl_critic_loads_when_perl_is_enabled(self) -> None:
+        perl_checks = load_mapping()["linters"]["PERL"]["check"]
+
+        assert "perl -MPerl::Critic -e 1" in perl_checks
+
+    def test_mapping_should_copy_the_powershell_modules_directory_when_powershell_is_enabled(self) -> None:
+        powershell_dirs = load_mapping()["linters"]["POWERSHELL"]["dirs"]
+
+        assert "/usr/local/share/powershell" in powershell_dirs
+
+    def test_mapping_should_keep_react_for_the_import_check_when_the_react_linters_are_enabled(self) -> None:
+        react_packages = load_mapping()["npm_groups"]["eslint_react"]
+
+        assert "react" in react_packages
 
 
 class TestGenerateOutputs:
