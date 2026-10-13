@@ -4,7 +4,7 @@
 
 | Profile | Baseline | Lean gzip | Lean zstd | Speedup (gzip) | Speedup (zstd) | Baseline unpacked | Lean unpacked | Unpacked saved | Baseline compressed | Lean compressed | Compressed saved | Baseline drift | Build gzip | Build zstd |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| base-only | 88 s | 11.7 s | 11.1 s | 7.5x | 7.9x | 3995 MB | 481 MB | 88% | 1310 MB | 150 MB | 89% | -2% | 91.2 s | 8.1 s |
+| base-only | 68.3 s | 9.4 s | 9.3 s | 7.3x | 7.4x | 3995 MB | 481 MB | 88% | 1310 MB | 150 MB | 89% | -3% | 69.5 s | 6.5 s |
 | c-cpp | 77.6 s | 11 s | 10.5 s | 7.1x | 7.4x | 3995 MB | 497 MB | 88% | 1310 MB | 156 MB | 88% | 2% | 79.8 s | 5.3 s |
 | dotnet | 91 s | 17 s | 15.4 s | 5.4x | 5.9x | 5585 MB | 1093 MB | 80% | 1798 MB | 378 MB | 79% | 6% | 116.9 s | 9.9 s |
 | frontend-angular | 68.7 s | 9.5 s | 8.8 s | 7.2x | 7.8x | 3995 MB | 491 MB | 88% | 1310 MB | 152 MB | 88% | 0% | 69.9 s | 5.7 s |
@@ -21,7 +21,7 @@
 
 | Profile | Baseline pull | Lean gzip pull | Baseline start | Lean gzip start |
 |---|---|---|---|---|
-| base-only | 0.8 s | 0.8 s | 0.4 s | 0.7 s |
+| base-only | 0.5 s | 0.5 s | 0.4 s | 0.2 s |
 | c-cpp | 0.2 s | 0.3 s | 0.3 s | 0.4 s |
 | dotnet | 0.4 s | 0.4 s | 0.2 s | 0.2 s |
 | frontend-angular | 0.3 s | 0.3 s | 0.2 s | 0.2 s |
