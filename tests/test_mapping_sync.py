@@ -93,9 +93,13 @@ class TestDerive:
         assert entry is not None
         assert entry["npm"] == ["__group:stylelint:@scope/stylelint"]
 
-    def test_derive_should_return_none_when_the_command_cannot_be_placed(self, tmp_path: Path) -> None:
-        assert mapping_sync.derive("X", "unknown", tmp_path, {}, set(), []) is None
-        assert mapping_sync.derive("X", None, tmp_path, {}, set(), []) is None
+    @pytest.mark.parametrize("command", ["unknown", None], ids=["unknown-command", "no-command"])
+    def test_derive_should_return_none_when_the_command_cannot_be_placed(
+        self, command: str | None, tmp_path: Path
+    ) -> None:
+        entry = mapping_sync.derive("X", command, tmp_path, {}, set(), [])
+
+        assert entry is None
 
 
 class TestMain:

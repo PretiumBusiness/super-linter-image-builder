@@ -124,7 +124,9 @@ class TestFiletypesTable:
     def test_filetypes_table_should_only_list_mapped_always_on_flags_when_loaded(
         self, upstream_flags: set[str], filetypes: dict[str, Any]
     ) -> None:
-        assert set(filetypes["always_on"]) - upstream_flags == set()
+        unmapped_flags = set(filetypes["always_on"]) - upstream_flags
+
+        assert unmapped_flags == set()
 
 
 class TestChangedFiles:

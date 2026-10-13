@@ -27,36 +27,44 @@ class FakeGh:
 
 
 class TestCalls:
-    def test_calls_should_cover_merge_settings_actions_settings_and_the_ruleset(self) -> None:
-        paths = [call.path for call in repository_settings.calls()]
+    def test_calls_should_cover_merge_settings_actions_settings_and_the_ruleset_when_the_settings_are_built(
+        self,
+    ) -> None:
+        calls = repository_settings.calls()
 
+        paths = [call.path for call in calls]
         assert paths == ["", "actions/permissions", "actions/permissions/workflow", "rulesets"]
 
-    def test_calls_should_keep_workflows_from_approving_pull_requests(self) -> None:
-        workflow = repository_settings.calls()[2]
+    def test_calls_should_keep_workflows_from_approving_pull_requests_when_the_settings_are_built(self) -> None:
+        calls = repository_settings.calls()
 
+        workflow = calls[2]
         assert workflow.typed["can_approve_pull_request_reviews"] == "false"
         assert workflow.raw["default_workflow_permissions"] == "read"
 
-    def test_calls_should_allow_only_squash_merges_with_the_pr_title_and_body(self) -> None:
-        merge = repository_settings.calls()[0]
+    def test_calls_should_allow_only_squash_merges_with_the_pr_title_and_body_when_the_settings_are_built(
+        self,
+    ) -> None:
+        calls = repository_settings.calls()
 
+        merge = calls[0]
         assert merge.typed["allow_squash_merge"] == "true"
         assert merge.typed["allow_merge_commit"] == "false"
         assert merge.typed["allow_rebase_merge"] == "false"
         assert merge.raw["squash_merge_commit_title"] == "PR_TITLE"
 
-    def test_ruleset_should_require_the_checks_and_a_squash_only_pull_request(self) -> None:
+    def test_ruleset_should_require_the_checks_and_a_squash_only_pull_request_when_the_ruleset_is_built(self) -> None:
         rules = {rule["type"]: rule for rule in repository_settings.RULESET["rules"]}
 
-        checks = [c["context"] for c in rules["required_status_checks"]["parameters"]["required_status_checks"]]
+        required = rules["required_status_checks"]["parameters"]["required_status_checks"]
+        checks = [check["context"] for check in required]
         assert checks == ["Lint, type-check, test", "Run Super-Linter", "Validate PR Title"]
         assert rules["pull_request"]["parameters"]["allowed_merge_methods"] == ["squash"]
         assert "required_linear_history" in rules
 
 
 class TestArguments:
-    def test_arguments_should_send_typed_fields_with_dash_big_f_and_raw_fields_with_dash_f(self) -> None:
+    def test_arguments_should_send_typed_fields_with_dash_big_f_and_raw_with_dash_f_when_both_are_set(self) -> None:
         call = repository_settings.Call("t", "PUT", "x", typed={"a": "true"}, raw={"b": "all"})
 
         args = call.arguments(REPOSITORY)
@@ -66,7 +74,9 @@ class TestArguments:
     def test_arguments_should_read_the_body_from_stdin_when_the_call_has_one(self) -> None:
         call = repository_settings.Call("t", "POST", "rulesets", body={"name": "n"})
 
-        assert call.arguments(REPOSITORY)[-2:] == ["--input", "-"]
+        args = call.arguments(REPOSITORY)
+
+        assert args[-2:] == ["--input", "-"]
 
 
 class TestMain:
@@ -89,11 +99,11 @@ class TestMain:
 
         code = repository_settings.main([REPOSITORY, "--apply"])
 
+        methods = [command[3] for command, _stdin in gh.calls]
+        ruleset_body = json.loads(gh.calls[-1][1] or "{}")
         assert code == 0
-        assert [command[:4] for command, _ in gh.calls] == [
-            ["gh", "api", "--method", m] for m in ("PATCH", "PUT", "PUT", "POST")
-        ]
-        assert json.loads(gh.calls[-1][1] or "{}")["name"] == "Enforce Main Protections"
+        assert methods == ["PATCH", "PUT", "PUT", "POST"]
+        assert ruleset_body["name"] == "Enforce Main Protections"
 
     def test_main_should_return_one_and_keep_going_when_a_call_fails(
         self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
@@ -103,9 +113,11 @@ class TestMain:
 
         code = repository_settings.main([REPOSITORY, "--apply"])
 
+        sent_calls = len(gh.calls)
+        output = capsys.readouterr().out
         assert code == 1
-        assert len(gh.calls) == 4
-        assert "gh api failed with exit code 1" in capsys.readouterr().out
+        assert sent_calls == 4
+        assert "gh api failed with exit code 1" in output
 
     @pytest.mark.parametrize("repository", ["noslash", "a/b/c", "owner/", "/repo", "o wner/repo"])
     def test_main_should_return_two_when_the_repository_is_not_owner_slash_repo(
