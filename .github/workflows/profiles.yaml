@@ -54,17 +54,19 @@ on:
         type: string
         default: ""
 
-permissions:
-  contents: read
-  packages: write
+permissions: {}
 
 jobs:
   plan:
+    permissions:
+      contents: read
     runs-on: ${{ fromJSON(inputs.runner_labels || vars.RUNNER_LABELS || '["ubuntu-latest"]') }}
     outputs:
       matrix: ${{ steps.m.outputs.matrix }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - id: m
         env:
           PROFILES: ${{ inputs.profiles }}
@@ -90,6 +92,9 @@ jobs:
   profile:
     name: ${{ matrix.profile }}
     needs: plan
+    permissions:
+      contents: read
+      packages: write
     runs-on: ${{ fromJSON(inputs.runner_labels || vars.RUNNER_LABELS || '["ubuntu-latest"]') }}
     strategy:
       fail-fast: false
@@ -117,9 +122,12 @@ jobs:
             || echo "::warning::less than 25 GB free; large profiles (dotnet) may fail"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           repository: super-linter/super-linter
           ref: ${{ inputs.upstream_tag }}
           path: upstream
@@ -191,12 +199,14 @@ jobs:
 
       - name: Benchmark pulls
         if: always()
+        env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
         run: |
           out="bench-${PROFILE}.jsonl"
           rm -f "$out"
           export BENCH_OUT="$out"
           measure() { # image kind mode
-            BENCH_MODE="$3" scripts/bench-pull.sh "$1" "$RUNS" "${PROFILE}/$2" "${{ runner.environment }}" \
+            BENCH_MODE="$3" scripts/bench-pull.sh "$1" "$RUNS" "${PROFILE}/$2" "$RUNNER_ENVIRONMENT" \
               || echo "::warning::benchmark failed: $2 ($3)"
           }
           for mode in cold warm; do
@@ -237,8 +247,13 @@ jobs:
     runs-on: ${{ fromJSON(inputs.runner_labels || vars.RUNNER_LABELS || '["ubuntu-latest"]') }}
     permissions:
       contents: write
+    env:
+      UPSTREAM_TAG: ${{ inputs.upstream_tag }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: profile-*
@@ -246,7 +261,7 @@ jobs:
       - name: Compare lean against baseline
         run: |
           {
-            echo "## Lean vs upstream baseline (upstream ${{ inputs.upstream_tag }})"
+            echo "## Lean vs upstream baseline (upstream ${UPSTREAM_TAG})"
             echo
             scripts/compare.sh bench-*.jsonl build-*.jsonl
           } | tee results.md >> "$GITHUB_STEP_SUMMARY"
@@ -278,12 +293,15 @@ jobs:
           cp "$RUNNER_TEMP"/out/* "$dir/"
           # Latest numbers per upstream tag, merged over several runs. The
           # release workflow compares these between two tags.
-          bytag="results/by-tag/${{ inputs.upstream_tag }}"
+          bytag="results/by-tag/${UPSTREAM_TAG}"
           mkdir -p "$bytag"
           cp "$RUNNER_TEMP"/out/* "$bytag/"
           rm -f "$bytag/results.md"
-          { echo "## Lean vs upstream baseline (upstream ${{ inputs.upstream_tag }})"; echo
+          { echo "## Lean vs upstream baseline (upstream ${UPSTREAM_TAG})"; echo
             bash "$RUNNER_TEMP/compare.sh" "$bytag"/bench-*.jsonl "$bytag"/build-*.jsonl 2>/dev/null; } > "$bytag/results.md" || true
           git add results
-          git commit -q -m "Benchmark results: run ${GITHUB_RUN_ID} (upstream ${{ inputs.upstream_tag }})"
-          git push origin bench-results
+          git commit -q -m "Benchmark results: run ${GITHUB_RUN_ID} (upstream ${UPSTREAM_TAG})"
+          # the checkout keeps no credentials; give git the token for this push only
+          auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          echo "::add-mask::${auth}"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth}" push origin bench-results

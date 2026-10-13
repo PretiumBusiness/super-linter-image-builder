@@ -34,9 +34,7 @@ on:
         default: ""
         required: false
 
-permissions:
-  contents: write
-  packages: write
+permissions: {}
 
 concurrency:
   group: release
@@ -45,6 +43,8 @@ concurrency:
 jobs:
   detect:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       changed: ${{ steps.v.outputs.changed }}
       old: ${{ steps.v.outputs.old }}
@@ -79,7 +79,10 @@ jobs:
   bench-old:
     needs: detect
     if: needs.detect.outputs.changed == 'true' && needs.detect.outputs.has_old == 'false'
-    uses: ./.github/workflows/profiles.yaml
+    permissions:
+      contents: write
+      packages: write
+    uses: ./.github/workflows/profiles.yaml # zizmor: ignore[self-repository] actionlint rejects the $/ syntax
     with:
       upstream_tag: ${{ needs.detect.outputs.old }}
       profiles: ${{ vars.RELEASE_PROFILES || 'ghwm,python,frontend-react,dotnet' }}
@@ -88,7 +91,10 @@ jobs:
   bench-new:
     needs: [detect, bench-old]
     if: always() && needs.detect.outputs.changed == 'true' && needs.bench-old.result != 'cancelled'
-    uses: ./.github/workflows/profiles.yaml
+    permissions:
+      contents: write
+      packages: write
+    uses: ./.github/workflows/profiles.yaml # zizmor: ignore[self-repository] actionlint rejects the $/ syntax
     with:
       upstream_tag: ${{ needs.detect.outputs.new }}
       profiles: ${{ vars.RELEASE_PROFILES || 'ghwm,python,frontend-react,dotnet' }}
@@ -98,6 +104,8 @@ jobs:
     needs: [detect, bench-new]
     if: always() && needs.detect.outputs.changed == 'true' && needs.bench-new.result != 'cancelled'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       OLD: ${{ needs.detect.outputs.old }}

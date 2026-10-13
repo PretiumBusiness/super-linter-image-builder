@@ -55,10 +55,7 @@ on:
       - src/**
       - upstream-version.txt
 
-permissions:
-  contents: write
-  pull-requests: write
-  packages: read
+permissions: {}
 
 concurrency:
   group: upstream-sync-${{ github.ref }}
@@ -69,6 +66,8 @@ jobs:
     name: Mapping covers the pinned upstream version
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -91,13 +90,15 @@ jobs:
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
 
       - name: Compare the mapping with upstream
+        env:
+          PINNED: ${{ steps.pin.outputs.pinned }}
         run: |
           set +e
           uv run superlint-lean sync-mapping --upstream upstream --report coverage.md
           rc=$?
           cat coverage.md >> "$GITHUB_STEP_SUMMARY"
           if [ "$rc" -ne 0 ]; then
-            echo "::error::src/superlint_lean/data/linters.json does not match upstream ${{ steps.pin.outputs.pinned }}. See the job summary."
+            echo "::error::src/superlint_lean/data/linters.json does not match upstream ${PINNED}. See the job summary."
             exit 1
           fi
 
@@ -105,6 +106,8 @@ jobs:
     name: Is upstream ahead of the pinned version?
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       pinned: ${{ steps.v.outputs.pinned }}
       latest: ${{ steps.v.outputs.latest }}
@@ -155,12 +158,18 @@ jobs:
     needs: detect
     if: needs.detect.outputs.behind == 'true'
     runs-on: ${{ fromJSON(inputs.runner_labels || vars.RUNNER_LABELS || '["ubuntu-latest"]') }}
+    permissions:
+      contents: write
+      pull-requests: write
+      packages: read
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PINNED: ${{ needs.detect.outputs.pinned }}
       TAG: ${{ needs.detect.outputs.latest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Check out the new upstream release
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -202,7 +211,10 @@ jobs:
           git checkout -q -B "$branch"
           git add upstream-version.txt src/superlint_lean/data/linters.json
           git commit -q -m "Sync mapping with upstream ${TAG}"
-          git push -f origin "$branch"
+          # the checkout keeps no credentials; give git the token for this push only
+          auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          echo "::add-mask::${auth}"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth}" push -f origin "$branch"
           {
             echo "Syncs the mapping with upstream Super-Linter ${TAG} (was ${PINNED})."
             echo
