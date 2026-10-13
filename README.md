@@ -48,6 +48,7 @@ Commands:
 | `superlint-lean drift` | PR drift check: fails when changed files are not covered by the enabled linters |
 | `superlint-lean sync-mapping` | Compare the linter mapping with an upstream checkout and add draft entries |
 | `superlint-lean release-notes` | Release notes with before/after benchmarks of two upstream versions |
+| `superlint-lean smoke` | Lint upstream's good and bad fixtures with a built image, one linter at a time |
 
 ## Layout
 
@@ -59,7 +60,7 @@ Commands:
 | `base/opinionated.env` | The opinionated base: the checks almost every repository wants (EditorConfig, env, actionlint, zizmor, gitleaks, JSON, Markdown, natural language, YAML, shell, hadolint) |
 | `toolchains/` | Example toolchains on top of the base: python, Java, dotnet, rust, c-cpp, frontend-{vanilla,react,vue,angular,svelte}, base-only |
 | `examples/` | `ghwm.env` (a real repository's exact flags, without the base) and `with-extras.env` |
-| `scripts/` | `bench-pull.sh`, `compare.sh`, `summarize.sh`: cold pull timing and result tables; `smoke.sh`: lints upstream's good and bad fixtures with a built image |
+| `scripts/` | `bench-pull.sh`, `compare.sh`, `summarize.sh`: cold pull timing and result tables |
 | `.github/workflows/` | `tests`, `profiles` (benchmarks), `upstream-sync`, `release`, `self-image` (this repository's own lean image), and the reusable `drift-blocker` |
 
 ## Development

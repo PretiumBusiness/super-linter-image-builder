@@ -124,7 +124,7 @@ To add or fix an entry:
    `dependencies/package.json`) and fill in the keys above. Prefer the
    narrowest copy that works.
 3. Generate an image with the flag, build it and run its `checks.sh`; for a
-   linter with an upstream fixture, `scripts/smoke.sh` also runs a good and a
+   linter with an upstream fixture, `superlint-lean smoke` also runs a good and a
    bad file through the real entrypoint.
 4. Update `tests/test_mapping_sync.py` or `tests/test_generate.py` if the
    derivation or the output changed. `superlint-lean sync-mapping` must report
