@@ -10,14 +10,16 @@ Usage:
 
 Modes (``--mode``, default ``$BENCH_MODE`` or ``cold``):
 
-    cold  remove the local image and every other unused image before every run,
-          then time ``docker pull``. Other images must go too: the gzip and zstd
-          variants of an image share their uncompressed layers, and a variant
-          pulled next to the other one would reuse them and look almost free.
-          This clears unused images on the runner.
-    warm  the image stays on the runner (a first, unmeasured pull makes sure it
-          is there); time the no-op ``docker pull``, which is what a job pays
-          when nothing needs downloading.
+    cold
+        remove the local image and every other unused image before every run,
+        then time ``docker pull``. Other images must go too: the gzip and zstd
+        variants of an image share their uncompressed layers, and a variant
+        pulled next to the other one would reuse them and look almost free.
+        This clears unused images on the runner.
+    warm
+        the image stays on the runner (a first, unmeasured pull makes sure it
+        is there); time the no-op ``docker pull``, which is what a job pays
+        when nothing needs downloading.
 
 Rows are printed and appended to ``--out`` (default ``$BENCH_OUT`` or
 ``bench-results.jsonl``). ``--split`` (or ``BENCH_SPLIT=1``) also times, in cold
