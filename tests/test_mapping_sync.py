@@ -57,8 +57,10 @@ class TestUpstreamParsing:
         (tmp_path / "lib/globals").mkdir(parents=True)
         (tmp_path / "lib/globals/languages.sh").write_text("nothing here\n")
 
-        with pytest.raises(SystemExit, match="LANGUAGE_ARRAY"):
+        with pytest.raises(SystemExit) as exc_info:
             mapping_sync.upstream_flags(tmp_path)
+
+        assert "LANGUAGE_ARRAY" in str(exc_info.value)
 
     def test_upstream_commands_should_return_none_when_the_command_comes_from_a_variable(
         self, upstream_checkout: Path
@@ -93,9 +95,15 @@ class TestDerive:
         assert entry is not None
         assert entry["npm"] == ["__group:stylelint:@scope/stylelint"]
 
-    def test_derive_should_return_none_when_the_command_cannot_be_placed(self, tmp_path: Path) -> None:
-        assert mapping_sync.derive("X", "unknown", tmp_path, {}, set(), []) is None
-        assert mapping_sync.derive("X", None, tmp_path, {}, set(), []) is None
+    def test_derive_should_return_none_when_the_command_matches_nothing_upstream(self, tmp_path: Path) -> None:
+        entry = mapping_sync.derive("X", "unknown", tmp_path, {}, set(), [])
+
+        assert entry is None
+
+    def test_derive_should_return_none_when_the_flag_has_no_command(self, tmp_path: Path) -> None:
+        entry = mapping_sync.derive("X", None, tmp_path, {}, set(), [])
+
+        assert entry is None
 
 
 class TestMain:
