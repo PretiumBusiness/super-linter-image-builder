@@ -5,7 +5,7 @@ from __future__ import annotations
 import sys
 from collections.abc import Callable, Sequence
 
-from superlint_lean import __version__, drift, generate, mapping_sync, release_notes, report, smoke
+from superlint_lean import __version__, drift, generate, mapping_sync, release_notes, report, repository_settings, smoke
 
 COMMANDS: dict[str, tuple[Callable[[Sequence[str] | None], int | None], str]] = {
     "generate": (generate.main, "Generate a lean image build context from VALIDATE_* flags."),
@@ -14,6 +14,7 @@ COMMANDS: dict[str, tuple[Callable[[Sequence[str] | None], int | None], str]] = 
     "release-notes": (release_notes.main, "Write release notes comparing benchmarks of two upstream versions."),
     "compare": (report.main_compare, "Compare lean images with their upstream baseline from benchmark results."),
     "summarize": (report.main_summarize, "Summarize benchmark results, one row per variant."),
+    "repository-settings": (repository_settings.main, "Print or apply the repository settings (maintainers)."),
     "smoke": (smoke.main, "Lint upstream's good and bad fixtures with a built image."),
 }
 

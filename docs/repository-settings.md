@@ -2,11 +2,11 @@
 
 The settings below limit how people and automation can interact with the
 repository. They mirror the ghwm repository and are not stored in Git, so
-`scripts/apply-repository-settings.sh` applies them with the `gh` CLI:
+`superlint-lean repository-settings` applies them with the `gh` CLI:
 
 ```sh
-scripts/apply-repository-settings.sh OWNER/REPO            # print what would be sent
-scripts/apply-repository-settings.sh OWNER/REPO --apply    # apply (needs admin rights)
+superlint-lean repository-settings OWNER/REPO            # print what would be sent
+superlint-lean repository-settings OWNER/REPO --apply    # apply (needs admin rights)
 ```
 
 ## Merging
