@@ -82,6 +82,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      id-token: write
     uses: ./.github/workflows/profiles.yaml # zizmor: ignore[self-repository] actionlint rejects the $/ syntax
     with:
       upstream_tag: ${{ needs.detect.outputs.old }}
@@ -94,6 +95,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      id-token: write
     uses: ./.github/workflows/profiles.yaml # zizmor: ignore[self-repository] actionlint rejects the $/ syntax
     with:
       upstream_tag: ${{ needs.detect.outputs.new }}
