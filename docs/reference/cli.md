@@ -68,6 +68,31 @@ Write release notes comparing the benchmarks of two upstream versions.
 | `--mapping-diff FILE` | Append the mapping changes between the versions. |
 | `--out FILE` | Also write the notes to a file. |
 
+## `compare`
+
+Markdown tables from benchmark results: lean against the upstream baseline, per profile.
+
+```text
+superlint-lean compare FILE.jsonl...
+```
+
+Reads the `bench-*.jsonl` and `build-*.jsonl` files written by the benchmark workflow (one run per line, `variant`
+is `<profile>/<kind>`). Prints a cold-pull table (median pull time, speedup, sizes, baseline drift, build time) and a
+warm-pull table. Percentages round half away from zero, so a small negative change prints as `-0%`; a baseline drift
+above 15% is marked `WARN`.
+
+Exit codes: `0` printed, `2` no file given or a file could not be read.
+
+## `summarize`
+
+One row per runner, mode and variant, with the median and the range of the runs.
+
+```text
+superlint-lean summarize FILE.jsonl...
+```
+
+Same input and exit codes as `compare`. Rows without a runner (the build timings) print `null` and come first.
+
 ## `smoke`
 
 Lint upstream's good and bad fixtures with a built image, one linter at a time.
