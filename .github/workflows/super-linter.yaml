@@ -26,13 +26,13 @@ env:
   PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH: ""
   SUPER_LINTER_CONFIG_PATH: .github/super-linter.env
   SUPER_LINTER_FIX_CONFIG_PATH: .github/super-linter-fix.env
-  RUN_SUPER_LINTER_SLIM: false
+  RUN_SUPER_LINTER_SLIM: true
   RUN_SUPER_LINTER_FIXES: false
   # Upstream Super-Linter release to run (the image tag)
   SUPER_LINTER_VERSION: v9.0.0
   # true: run the lean image published by the super-linter-lean workflow, whose
   # tag is stored in the SUPER_LINTER_CUSTOM_IMAGE repository variable
-  SUPER_LINTER_CUSTOM: false
+  SUPER_LINTER_CUSTOM: true
 
 jobs:
   super-linter:
