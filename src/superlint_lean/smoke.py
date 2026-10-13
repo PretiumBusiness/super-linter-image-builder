@@ -1,7 +1,7 @@
 """Smoke-test a built image against Super-Linter's own good and bad fixtures.
 
 Usage:
-    superlint-lean smoke <image> <plan.json> <upstream-dir>
+    superlint-lean smoke <image> <plan.json> <upstream-dir> [--mapping linters.json]
 
     plan.json
         written by ``superlint-lean generate`` (its "flags" list)
@@ -17,6 +17,11 @@ Only that one linter is enabled, so the run also shows that the image lints
 with a lean flag set. Upstream's own ``TEST_CASE_RUN`` mode cannot be used: it
 refuses to run unless every validation is enabled.
 
+Then it enables every flag of the plan at once, puts the bad fixtures of the
+mapped linters that are not enabled into the repository, and checks that none
+of them shows up in the summary: a disabled linter is skipped, not run and not
+failing.
+
 Prints a Markdown table. Exit code: 0 every flag behaved, 1 at least one did
 not, 2 a bad argument.
 """
@@ -30,6 +35,8 @@ import sys
 import tempfile
 from collections.abc import Sequence
 from pathlib import Path
+
+MAPPING = Path(__file__).resolve().parent / "data" / "linters.json"
 
 # these linters only look at files under .github/workflows
 WORKFLOW_FLAGS = frozenset({"GITHUB_ACTIONS", "GITHUB_ACTIONS_ZIZMOR"})
@@ -75,7 +82,7 @@ def verdict(summary: str, flag: str) -> str:
     return NOT_LINTED
 
 
-def docker_command(image: str, repo: Path, flag: str) -> list[str]:
+def docker_command(image: str, repo: Path, flags: Sequence[str]) -> list[str]:
     return [
         "docker",
         "run",
@@ -94,8 +101,7 @@ def docker_command(image: str, repo: Path, flag: str) -> list[str]:
         "SAVE_SUPER_LINTER_SUMMARY=true",
         "-e",
         "LOG_LEVEL=ERROR",
-        "-e",
-        f"VALIDATE_{flag}=true",
+        *[arg for flag in flags for arg in ("-e", f"VALIDATE_{flag}=true")],
         "-v",
         f"{repo}:/tmp/lint",
         image,
@@ -112,9 +118,9 @@ def init_repository(repo: Path) -> None:
         subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
 
 
-def run_image(image: str, repo: Path, flag: str) -> None:
+def run_image(image: str, repo: Path, flags: Sequence[str]) -> None:
     """Run the image on `repo`. A failing lint exits non-zero; the verdict comes from the summary."""
-    subprocess.run(docker_command(image, repo, flag), check=False, capture_output=True)
+    subprocess.run(docker_command(image, repo, flags), check=False, capture_output=True)
 
 
 def clear_directory(image: str, work: Path) -> None:
@@ -146,9 +152,32 @@ def result(image: str, flag: str, kind: str, source: Path, upstream: Path, work:
     if flag == "EDITORCONFIG":
         shutil.copy2(upstream / ".editorconfig", repo / ".editorconfig")
     init_repository(repo)
-    run_image(image, repo, flag)
+    run_image(image, repo, [flag])
     summary = repo / SUMMARY
     return verdict(summary.read_text() if summary.exists() else "", flag)
+
+
+def skipped(image: str, enabled: Sequence[str], mapped: Sequence[str], upstream: Path, work: Path) -> tuple[str, bool]:
+    """Run every enabled linter on the bad files of the disabled ones; the disabled must not appear."""
+    disabled = [flag for flag in mapped if flag not in enabled and fixture_dir(upstream, flag).is_dir()]
+    if not disabled:
+        return "Disabled linters: none to test", True
+    repo = work / "disabled"
+    for flag in disabled:
+        copy_fixtures(fixture_dir(upstream, flag), "bad", destination(repo, flag))
+    probe = next((flag for flag in enabled if fixture_dir(upstream, flag).is_dir()), "")
+    if probe:
+        copy_fixtures(fixture_dir(upstream, probe), "good", destination(repo, probe))
+    init_repository(repo)
+    run_image(image, repo, enabled)
+    summary = repo / SUMMARY
+    text = summary.read_text() if summary.exists() else ""
+    if probe and verdict(text, probe) == NOT_LINTED:
+        return f"Disabled linters: FAIL (the image did not lint: {probe} is missing from the summary)", False
+    ran = [flag for flag in disabled if verdict(text, flag) != NOT_LINTED]
+    if ran:
+        return f"Disabled linters: FAIL (ran although disabled: {', '.join(ran)})", False
+    return f"Disabled linters: ok ({len(disabled)} skipped)", True
 
 
 def cell(outcome: str, expected: str, label: str) -> tuple[str, bool]:
@@ -160,8 +189,8 @@ def cell(outcome: str, expected: str, label: str) -> tuple[str, bool]:
     return f"FAIL ({outcome})", True
 
 
-def smoke(image: str, flags: Sequence[str], upstream: Path) -> tuple[list[str], bool]:
-    """The Markdown table lines and whether every flag behaved."""
+def smoke(image: str, flags: Sequence[str], upstream: Path, mapped: Sequence[str] = ()) -> tuple[list[str], bool]:
+    """The Markdown lines and whether every flag behaved and the disabled linters were skipped."""
     lines = ["| Flag | Good file | Bad file |", "| --- | --- | --- |"]
     ok = True
     work = Path(tempfile.mkdtemp())
@@ -175,6 +204,9 @@ def smoke(image: str, flags: Sequence[str], upstream: Path) -> tuple[list[str], 
             bad, bad_failed = cell(result(image, flag, "bad", source, upstream, work), ERRORS, "bad")
             ok = ok and not good_failed and not bad_failed
             lines.append(f"| {flag} | {good} | {bad} |")
+        line, skipped_ok = skipped(image, flags, mapped, upstream, work)
+        ok = ok and skipped_ok
+        lines += ["", line]
     finally:
         clear_directory(image, work)
     return lines, ok
@@ -185,14 +217,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("image", help="the image to test")
     ap.add_argument("plan", help="plan.json written by `superlint-lean generate`")
     ap.add_argument("upstream", help="a Super-Linter checkout at the tag the image was built from")
+    ap.add_argument(
+        "--mapping", default=str(MAPPING), help="linters.json; its flags that are not in the plan must be skipped"
+    )
     args = ap.parse_args(argv)
 
     try:
         flags: list[str] = json.loads(Path(args.plan).read_text())["flags"]
+        mapped: list[str] = list(json.loads(Path(args.mapping).read_text())["linters"])
     except (OSError, ValueError, KeyError) as e:
-        print(f"::error::cannot read the flags from {args.plan}: {e}")
+        print(f"::error::cannot read the flags from {args.plan} or {args.mapping}: {e}")
         return 2
-    lines, ok = smoke(args.image, flags, Path(args.upstream))
+    lines, ok = smoke(args.image, flags, Path(args.upstream), mapped)
     print("\n".join(lines))
     return 0 if ok else 1
 

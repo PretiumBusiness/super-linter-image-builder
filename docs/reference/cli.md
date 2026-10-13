@@ -134,7 +134,7 @@ Exit codes: `0` done, `1` a call failed, `2` the repository is not `OWNER/REPO`.
 Lint upstream's good and bad fixtures with a built image, one linter at a time.
 
 ```text
-superlint-lean smoke <image> <plan.json> <upstream-dir>
+superlint-lean smoke <image> <plan.json> <upstream-dir> [--mapping linters.json]
 ```
 
 | Argument | Description |
@@ -142,9 +142,15 @@ superlint-lean smoke <image> <plan.json> <upstream-dir>
 | `image` | The image to test, for example the one built from `generate`'s output. |
 | `plan.json` | Written by `generate`; its `flags` list says which linters to test. |
 | `upstream-dir` | A Super-Linter checkout at the tag the image was built from (only `test/linters` and `.editorconfig` are read). |
+| `--mapping` | The `linters.json` whose flags are mapped (default: the bundled one). Mapped flags that are not in the plan are the disabled linters. |
 
 Prints a Markdown table with one row per flag. A flag passes when the good files pass and the bad files fail
 in the Super-Linter summary; a linter that found no files counts as a failure. Flags without a fixture
 directory are reported, not failed.
 
-Exit codes: `0` every flag behaved, `1` at least one did not, `2` the plan could not be read.
+After the table it enables every flag of the plan at once and puts the bad fixtures of the mapped linters that are
+not in the plan into the repository. None of those linters may appear in the summary: a disabled linter is skipped,
+not run and not failing. The line below the table says `Disabled linters: ok (N skipped)`, or names the linters
+that ran anyway. An image with every mapped linter has nothing to skip.
+
+Exit codes: `0` every flag behaved and the disabled linters were skipped, `1` at least one did not, `2` the plan could not be read.
