@@ -33,9 +33,12 @@ caveats are in [docs/benchmarks](docs/benchmarks/README.md).
 The CLI is a Python package, managed with [uv](https://docs.astral.sh/uv/):
 
 ```sh
-uv tool install superlint-lean            # once it is published to PyPI
-uvx --from git+https://github.com/ghwfxlab/superlint-lean superlint-lean --help
+uv tool install superlint-lean    # or: pipx install superlint-lean
+uvx superlint-lean --help         # run without installing
 ```
+
+The latest unreleased code is available with
+`uvx --from git+https://github.com/ghwfxlab/superlint-lean superlint-lean --help`.
 
 Commands:
 
