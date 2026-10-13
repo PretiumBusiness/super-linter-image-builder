@@ -71,7 +71,7 @@ flowchart LR
 | `upstream-sync.yaml` | Detects a newer upstream release (at least `UPSTREAM_COOLDOWN_DAYS` old, repository variable, default 0); only then syncs the mapping and opens a bump pull request. |
 | `release.yaml` | On a bump of the pin: benchmarks old and new versions and publishes a release. |
 | `profiles.yaml` | Reusable benchmark per stack profile. |
-| `self-image.yaml` | Builds this repository's own lean Super-Linter image from `.github/super-linter.env` smoke-tests it (`superlint-lean smoke`) and pushes it to GHCR (`ghcr.io/<owner>/<repo>/lint`). |
+| `self-image.yaml` | Builds this repository's own lean Super-Linter image from `.github/super-linter.env` with the composite action (`action.yml`: generate, build, smoke test) and pushes it to GHCR (`ghcr.io/<owner>/<repo>/super-linter-lean`). |
 | `drift-blocker.yml` | Reusable workflow other repositories call to run `drift`. |
 
 ## Managed workflows
