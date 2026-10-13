@@ -45,11 +45,12 @@ ok: prettier --check /tmp/fx/t.md
 ok: textlint -c /action/lib/.automation/.textlintrc /tmp/fx/t.md
 ok: spectral --version
 ok: perlcritic --version
+ok: perl -MPerl::Critic -e 1
 ok: php --version
 ok: phpcs --version
 ok: phpstan --version
 ok: psalm --version
-ok: pwsh -NoProfile -Command 'Get-Module -ListAvailable PSScriptAnalyzer | Select-Object -First 1 | ForEach-Object { $_.Version.ToString() }'
+ok: pwsh -NoProfile -Command 'if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) { Write-Output "PSScriptAnalyzer: not found"; exit 127 }'
 ok: pre-commit --version
 ok: protolint version
 ok: black --version
