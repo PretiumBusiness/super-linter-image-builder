@@ -17,6 +17,10 @@ name: Publish Super-Linter image
 # (ghcr.io/<owner>/<repo>/super-linter-lean:latest) and every rebuild, including a new
 # upstream version, is picked up.
 #
+# Every push is signed with cosign (keyless, GitHub OIDC) and gets a SLSA build
+# provenance attestation, both stored next to the image in GHCR. See
+# docs/verifying-images.md for how to check them.
+#
 # It runs when the linter flags, the upstream pin or the generator change on
 # main, or by hand. It never runs on a schedule: a new upstream release arrives
 # through upstream-version.txt.
@@ -45,6 +49,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
+      attestations: write
     steps:
       - name: Checkout the source code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -81,8 +87,31 @@ jobs:
             docker tag "${LOCAL_IMAGE}" "${image}:${tag}"
             docker push --quiet "${image}:${tag}"
           done
-          echo "Pushed \`${image}:${TAG}-${SHA::7}\`" >> "${GITHUB_STEP_SUMMARY}"
-          echo "image=${image}:${TAG}-${SHA::7}" >> "${GITHUB_OUTPUT}"
+          digest="$(docker inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "${image}:${TAG}-${SHA::7}" \
+            | sed -n "s|^${image}@||p" | head -n 1)"
+          echo "Pushed \`${image}:${TAG}-${SHA::7}\` (\`${digest}\`)" >> "${GITHUB_STEP_SUMMARY}"
+          {
+            echo "image=${image}:${TAG}-${SHA::7}"
+            echo "repository=${image}"
+            echo "digest=${digest}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign the image
+        env:
+          REPOSITORY: ${{ steps.build.outputs.repository }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign sign --yes "${REPOSITORY}@${DIGEST}"
+
+      - name: Attach build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ steps.build.outputs.repository }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+          create-storage-record: false
 
       - name: Point SUPER_LINTER_CUSTOM_IMAGE at the new image
         env:

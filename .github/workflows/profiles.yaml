@@ -95,6 +95,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
     runs-on: ${{ fromJSON(inputs.runner_labels || vars.RUNNER_LABELS || '["ubuntu-latest"]') }}
     strategy:
       fail-fast: false
@@ -172,6 +173,7 @@ jobs:
             t0=$(date +%s.%N)
             docker buildx build build \
               --provenance=false --sbom=false \
+              --metadata-file "${RUNNER_TEMP}/metadata-${c}.json" \
               --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
               --label "io.superlint-lean.upstream-tag=${TAG}" \
               --label "io.superlint-lean.profile=${PROFILE}" \
@@ -179,6 +181,17 @@ jobs:
             t1=$(date +%s.%N)
             jq -nc --arg v "${PROFILE}/lean-${c}" --argjson s "$(awk -v a="$t0" -v b="$t1" 'BEGIN{printf "%.1f", b-a}')" \
               '{variant:$v, mode:"build", pull_s:$s}' >> "build-${PROFILE}.jsonl"
+          done
+
+      # Signing happens after the timed builds. The signature is a separate
+      # artifact next to the image, so the pulls that are benchmarked do not change.
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign the images (keyless)
+        run: |
+          for c in gzip zstd; do
+            cosign sign --yes "${LEAN_BASE}@$(jq -r '."containerimage.digest"' "${RUNNER_TEMP}/metadata-${c}.json")"
           done
 
       # Optional: enables the download vs unpack split. Failure is tolerated.

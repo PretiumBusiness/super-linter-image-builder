@@ -82,7 +82,8 @@ make build            # sdist and wheel
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow, [AGENTS.md](AGENTS.md)
 for the guide used by coding agents, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 and [docs/reference/cli.md](docs/reference/cli.md) for the internals and the
-command reference, and [docs/repository-settings.md](docs/repository-settings.md)
+command reference, [docs/verifying-images.md](docs/verifying-images.md) to
+check a pulled image, and [docs/repository-settings.md](docs/repository-settings.md)
 for the repository settings. Report vulnerabilities as described in
 [SECURITY.md](SECURITY.md).
 
