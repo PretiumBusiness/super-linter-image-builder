@@ -15,6 +15,7 @@ from superlint_lean import (
     report,
     repository_settings,
     smoke,
+    upstream,
 )
 
 COMMANDS: dict[str, tuple[Callable[[Sequence[str] | None], int | None], str]] = {
@@ -27,6 +28,7 @@ COMMANDS: dict[str, tuple[Callable[[Sequence[str] | None], int | None], str]] = 
     "summarize": (report.main_summarize, "Summarize benchmark results, one row per variant."),
     "repository-settings": (repository_settings.main, "Print or apply the repository settings (maintainers)."),
     "smoke": (smoke.main, "Lint upstream's good and bad fixtures with a built image."),
+    "select-upstream": (upstream.main, "Pick the upstream release to sync to, honouring a cooldown."),
 }
 
 
