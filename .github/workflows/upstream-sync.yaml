@@ -216,7 +216,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -q -B "$branch"
           git add upstream-version.txt src/superlint_lean/data/linters.json
-          git commit -q -m "Sync mapping with upstream ${TAG}"
+          git commit -q -m "chore: sync mapping with upstream ${TAG}"
           # the checkout keeps no credentials; give git the token for this push only
           auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
           echo "::add-mask::${auth}"
@@ -245,5 +245,5 @@ jobs:
             echo "::warning::SYNC_PR_TOKEN is not set; opening the pull request with the workflow token."
           fi
           GH_TOKEN="${PR_TOKEN:-$GH_TOKEN}" gh pr create --base main --head "$branch" \
-            --title "Sync mapping with upstream ${TAG}" --body-file pr-body.md \
+            --title "chore: sync mapping with upstream ${TAG}" --body-file pr-body.md \
             || echo "::warning::could not open a pull request. The branch $branch was pushed."
