@@ -209,8 +209,8 @@ jobs:
           docker pull --quiet "${LEAN_BASE}:${TAG}-gzip" >/dev/null
           docker run --rm -v "$PWD/build/checks.sh:/checks.sh:ro" --entrypoint bash \
             "${LEAN_BASE}:${TAG}-gzip" /checks.sh 2>&1 | tee "checks-${PROFILE}.log"
-          if grep -qiE '^(FAIL|ERROR)|: (FAIL|not found)' "checks-${PROFILE}.log"; then
-            grep -iE '^(FAIL|ERROR)|: (FAIL|not found)' "checks-${PROFILE}.log" | while read -r l; do echo "::error title=${PROFILE} tool check::$l"; done
+          if grep -qE '^FAIL' "checks-${PROFILE}.log"; then
+            grep -E '^FAIL' "checks-${PROFILE}.log" | while read -r l; do echo "::error title=${PROFILE} tool check::$l"; done
             exit 1
           fi
 
